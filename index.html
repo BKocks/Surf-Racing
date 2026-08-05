@@ -4,87 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0284c7">
-    <title>Ocean Surf Racing - Gesture Control Edition</title>
-    <!-- Three.js 3D Engine -->
+    <title>Ocean Surf Racing - Championship Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; user-select: none; -webkit-user-select: none;
+            touch-action: none; font-family: 'Segoe UI', Roboto, sans-serif;
             background-color: #0284c7;
         }
-        #canvas-container {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
         #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
             padding: env(safe-area-inset-top, 8px) env(safe-area-inset-right, 8px) env(safe-area-inset-bottom, 8px) env(safe-area-inset-left, 8px);
         }
         .interactive { pointer-events: auto; }
+        #touch-zone { position: absolute; bottom: 0; left: 0; width: 100%; height: 55%; z-index: 5; touch-action: none; }
         
-        /* Touch Zone & Virtuelles Steuerkreuz */
-        #touch-zone {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 55%; /* Untere Bildschirmhälfte */
-            z-index: 5;
-            touch-action: none;
-        }
-        
+        /* Neutrale Fingerposition / Steuerkreuz Visualisierung */
         #joystick-base {
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            margin-left: -50px;
-            margin-top: -50px;
-            border: 2px dashed rgba(56, 189, 248, 0.8);
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 50%;
-            pointer-events: none;
-            display: none;
-            backdrop-filter: blur(4px);
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+            position: absolute; width: 120px; height: 120px; margin-left: -60px; margin-top: -60px;
+            border: 3px solid rgba(56, 189, 248, 0.9); background: rgba(15, 23, 42, 0.6);
+            border-radius: 50%; pointer-events: none; display: none; backdrop-filter: blur(4px);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
         }
-
         #joystick-stick {
-            position: absolute;
-            width: 44px;
-            height: 44px;
-            margin-left: -22px;
-            margin-top: -22px;
+            position: absolute; width: 48px; height: 48px; margin-left: -24px; margin-top: -24px;
             background: radial-gradient(circle, #facc15 0%, #d97706 100%);
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-            pointer-events: none;
-            display: none;
-            box-shadow: 0 0 10px rgba(250, 204, 21, 0.8);
+            border: 2px solid #ffffff; border-radius: 50%; pointer-events: none; display: none;
+            box-shadow: 0 0 12px rgba(250, 204, 21, 0.9);
         }
-
         @keyframes pulseWarn { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
         .animate-warn { animation: pulseWarn 0.6s infinite ease-in-out; }
     </style>
@@ -92,24 +43,19 @@
 <body>
 
     <div id="canvas-container"></div>
-
-    <!-- Untere Touch-Steuerungs-Zone -->
     <div id="touch-zone" class="interactive"></div>
-    <!-- Visuelles Steuerkreuz (Neutrale Position & Finger-Stick) -->
+    
     <div id="joystick-base">
-        <!-- Fadenkreuz Marker -->
-        <div class="absolute inset-0 flex items-center justify-center text-cyan-300/60 font-mono text-xs">+</div>
+        <div class="absolute inset-0 flex items-center justify-center text-cyan-300 font-black text-sm">+</div>
     </div>
     <div id="joystick-stick"></div>
 
     <div id="ui-layer">
-        
-        <!-- Header HUD -->
         <div id="hud-top" class="flex justify-between items-center w-full max-w-4xl mx-auto hidden pointer-events-none">
             <div class="bg-slate-900/85 backdrop-blur-md border border-cyan-500/30 rounded-xl p-2 px-3 sm:px-4 shadow-lg flex items-center space-x-2 sm:space-x-4">
                 <div class="text-center">
                     <div class="text-[10px] sm:text-xs text-cyan-300 font-semibold uppercase">Pos</div>
-                    <div id="hud-rank" class="text-xl sm:text-2xl font-extrabold text-yellow-400">1.</div>
+                    <div id="hud-rank" class="text-xl sm:text-2xl font-extrabold text-yellow-400">1 / 5</div>
                 </div>
                 <div class="h-6 w-px bg-slate-700"></div>
                 <div class="text-center">
@@ -136,95 +82,70 @@
                     </div>
                 </div>
 
-                <button id="btn-in-game-menu" class="interactive bg-slate-900/85 border border-cyan-500/30 rounded-xl p-2 px-3 text-white text-lg font-bold shadow-lg active:scale-95">
-                    ⚙️
-                </button>
+                <button id="btn-in-game-menu" class="interactive bg-slate-900/85 border border-cyan-500/30 rounded-xl p-2 px-3 text-white text-lg font-bold shadow-lg active:scale-95">⚙️</button>
             </div>
         </div>
 
-        <!-- Mitte: Warnings & Touch Hinweise -->
         <div id="hud-center" class="flex flex-col items-center justify-center my-auto pointer-events-none">
-            <div id="countdown-banner" class="text-6xl sm:text-8xl font-black italic tracking-wider text-amber-400 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] hidden">
-                3
-            </div>
+            <div id="countdown-banner" class="text-6xl sm:text-8xl font-black italic text-amber-400 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] hidden">3</div>
             <div id="wrong-way-banner" class="hidden bg-rose-600/90 text-white font-black italic text-2xl sm:text-4xl px-6 py-2 rounded-2xl border-2 border-rose-300 shadow-2xl animate-warn">
                 ⚠️ WRONG WAY! ⚠️
             </div>
-            <!-- Subtile Touch-Anleitung während des Rennens -->
-            <div id="touch-hint" class="hidden text-xs text-cyan-200/80 bg-slate-900/60 backdrop-blur-sm px-4 py-1.5 rounded-full border border-cyan-500/20 mt-32">
-                👆 Unten wischen zum Steuern | ✌️ Doppeltippen zum Springen
-            </div>
         </div>
-
         <div></div>
     </div>
 
-    <!-- Hauptmenü Modal -->
+    <!-- Hauptmenü -->
     <div id="modal-start" class="interactive absolute inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-20">
         <div class="bg-slate-900 border border-cyan-500/40 rounded-3xl p-5 sm:p-7 max-w-lg w-full text-center shadow-2xl relative overflow-y-auto max-h-[95vh]">
-            <h1 class="text-3xl sm:text-5xl font-black italic tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-amber-300 mb-1">
-                OCEAN SURF
-            </h1>
-            <p class="text-cyan-200 text-xs sm:text-sm font-medium tracking-widest uppercase mb-4">Touch Gesture Edition</p>
+            <h1 class="text-3xl sm:text-5xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-amber-300 mb-1">OCEAN SURF</h1>
+            <p class="text-cyan-200 text-xs sm:text-sm font-medium uppercase mb-3">Championship 5-Racer Edition</p>
 
-            <!-- Profil-Manager -->
-            <div class="bg-slate-800/90 rounded-2xl p-3 mb-4 border border-slate-700 space-y-2">
+            <div class="bg-slate-800/90 rounded-2xl p-3 mb-3 border border-slate-700 space-y-2">
                 <div class="flex items-center justify-between gap-2">
-                    <select id="player-profile-select" class="bg-slate-900 border border-cyan-500/50 rounded-lg px-2 py-1 text-cyan-300 font-bold text-xs focus:outline-none w-2/3">
-                    </select>
-                    <button id="btn-create-profile" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-lg">
-                        + Neu
-                    </button>
+                    <select id="player-profile-select" class="bg-slate-900 border border-cyan-500/50 rounded-lg px-2 py-1 text-cyan-300 font-bold text-xs w-2/3"></select>
+                    <button id="btn-create-profile" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-lg">+ Neu</button>
                 </div>
                 <div class="flex justify-between items-center text-xs pt-1 border-t border-slate-700/60">
                     <span class="text-slate-300">Level <b id="profile-level" class="text-yellow-400">1</b></span>
-                    <span class="text-slate-300">MMR: <b id="profile-rating" class="text-amber-300">1000</b></span>
+                    <span class="text-slate-300">Rekord: <b id="profile-best-time" class="text-cyan-300">--:--</b></span>
                     <span class="text-amber-300 font-bold" id="profile-total-coins">🪙 0</span>
                 </div>
             </div>
 
-            <!-- Customization / Shop -->
-            <h3 class="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wider mb-2 text-left">Board Design (Shop):</h3>
+            <!-- Hilfstext nur vor dem Start sichtbar -->
+            <div class="bg-cyan-950/60 border border-cyan-500/30 rounded-xl p-2.5 mb-3 text-left text-xs text-cyan-200">
+                <div class="font-bold text-amber-300 mb-1">🎮 Steuerung:</div>
+                • Finger im unteren Bereich ansetzen (markiert den neutralen Punkt).<br>
+                • Nach links/rechts wischen = Lenken | Nach oben/unten = Gas/Bremse.<br>
+                • Doppelklick an Fingerposition = Springen 🦘
+            </div>
+
+            <h3 class="text-xs font-bold text-cyan-300 uppercase mb-1 text-left">Board Design (Shop):</h3>
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <button onclick="selectSkin('blue', 0)" id="skin-blue" class="skin-btn bg-slate-800 border-2 border-cyan-400 rounded-xl p-2 text-xs font-bold text-cyan-200">Classic Blau</button>
+                <button onclick="selectSkin('red', 100)" id="skin-red" class="skin-btn bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-xs font-bold text-rose-400">Red Flame (100 🪙)</button>
+                <button onclick="selectSkin('gold', 250)" id="skin-gold" class="skin-btn bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-xs font-bold text-yellow-400">Pro Gold (250 🪙)</button>
+            </div>
+
+            <h3 class="text-xs font-bold text-cyan-300 uppercase mb-1 text-left">Rennstrecke:</h3>
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div id="track-lagoon" onclick="selectTrack('lagoon')" class="track-card bg-slate-800 border-2 border-cyan-400 rounded-xl p-2 text-left cursor-pointer">
+                    <div class="font-bold text-cyan-200 text-xs">🏝️ Kristall-Lagune (Strand)</div>
+                </div>
+                <div id="track-volcano" onclick="selectTrack('volcano')" class="track-card bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-left cursor-pointer">
+                    <div class="font-bold text-cyan-200 text-xs">🌋 Vulkan-Küste (Berge)</div>
+                </div>
+            </div>
+
+            <h3 class="text-xs font-bold text-cyan-300 uppercase mb-1 text-left">Surfgerät:</h3>
             <div class="grid grid-cols-3 gap-2 mb-4">
-                <button onclick="selectSkin('blue', 0)" id="skin-blue" class="skin-btn bg-slate-800 border-2 border-cyan-400 rounded-xl p-2 text-xs font-bold text-cyan-200">
-                    🌊 Classic Blau
-                </button>
-                <button onclick="selectSkin('red', 100)" id="skin-red" class="skin-btn bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-xs font-bold text-rose-400">
-                    🔥 Red Flame (100 🪙)
-                </button>
-                <button onclick="selectSkin('gold', 250)" id="skin-gold" class="skin-btn bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-xs font-bold text-yellow-400">
-                    👑 Pro Gold (250 🪙)
-                </button>
+                <div id="card-longboard" onclick="selectSurfType('longboard')" class="surf-card bg-slate-800 border-2 border-cyan-400 rounded-xl p-2 text-left cursor-pointer"><div class="font-bold text-cyan-200 text-xs">🏄 Longboard</div></div>
+                <div id="card-windsurf" onclick="selectSurfType('windsurf')" class="surf-card bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-left cursor-pointer"><div class="font-bold text-cyan-200 text-xs">⛵ Windsurfen</div></div>
+                <div id="card-kitesurf" onclick="selectSurfType('kitesurf')" class="surf-card bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-left cursor-pointer"><div class="font-bold text-cyan-200 text-xs">🪁 Kitesurfen</div></div>
             </div>
 
-            <!-- Streckenauswahl -->
-            <h3 class="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wider mb-2 text-left">Rennstrecke:</h3>
-            <div class="grid grid-cols-2 gap-2 mb-4">
-                <div id="track-lagoon" onclick="selectTrack('lagoon')" class="track-card bg-slate-800 border-2 border-cyan-400 rounded-xl p-2.5 text-left cursor-pointer">
-                    <div class="font-bold text-cyan-200 text-xs">🏝️ Kristall-Lagune</div>
-                </div>
-                <div id="track-volcano" onclick="selectTrack('volcano')" class="track-card bg-slate-800/60 border border-slate-700 rounded-xl p-2.5 text-left cursor-pointer">
-                    <div class="font-bold text-cyan-200 text-xs">🌋 Vulkan-Passage</div>
-                </div>
-            </div>
-
-            <!-- Surfgerät-Auswahl -->
-            <h3 class="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wider mb-2 text-left">Surfgerät:</h3>
-            <div class="grid grid-cols-3 gap-2 mb-4">
-                <div id="card-longboard" onclick="selectSurfType('longboard')" class="surf-card bg-slate-800 border-2 border-cyan-400 rounded-xl p-2 text-left cursor-pointer">
-                    <div class="font-bold text-cyan-200 text-xs">🏄‍♂️ Longboard</div>
-                </div>
-                <div id="card-windsurf" onclick="selectSurfType('windsurf')" class="surf-card bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-left cursor-pointer">
-                    <div class="font-bold text-cyan-200 text-xs">⛵ Windsurfen</div>
-                </div>
-                <div id="card-kitesurf" onclick="selectSurfType('kitesurf')" class="surf-card bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-left cursor-pointer">
-                    <div class="font-bold text-cyan-200 text-xs">🪁 Kitesurfen</div>
-                </div>
-            </div>
-
-            <button id="btn-start-game" class="w-full py-3 sm:py-4 bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-black text-lg sm:text-xl rounded-2xl shadow-lg active:scale-95">
-                RENNEN STARTEN
-            </button>
+            <button id="btn-start-game" class="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-black text-lg rounded-2xl shadow-lg active:scale-95">RENNEN STARTEN</button>
         </div>
     </div>
 
@@ -232,279 +153,163 @@
     <div id="modal-result" class="interactive absolute inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden z-20">
         <div class="bg-slate-900 border border-cyan-500/40 rounded-3xl p-5 max-w-md w-full text-center shadow-2xl">
             <div id="result-badge" class="text-5xl mb-1">🏆</div>
-            <h2 id="result-title" class="text-2xl sm:text-3xl font-black text-amber-400 uppercase mb-1">SIEG!</h2>
-            <p id="result-subtitle" class="text-slate-300 text-xs sm:text-sm mb-3">Du hast das Surf-Rennen gewonnen!</p>
+            <h2 id="result-title" class="text-2xl font-black text-amber-400 uppercase mb-1">SIEG!</h2>
+            <p id="result-subtitle" class="text-slate-300 text-xs mb-3">Du hast das Surf-Rennen gewonnen!</p>
 
             <div class="bg-slate-800/80 rounded-xl p-3 text-center space-y-2 mb-4 border border-slate-700">
-                <div class="flex justify-around">
-                    <div>
-                        <span class="text-[10px] text-slate-400 block uppercase">Gesamtzeit</span>
-                        <span id="result-time" class="text-xl font-mono font-bold text-cyan-300">00:00.0</span>
-                    </div>
-                    <div>
-                        <span class="text-[10px] text-slate-400 block uppercase">Münzen</span>
-                        <span id="result-coins" class="text-xl font-mono font-bold text-amber-400">+0</span>
-                    </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div><span class="text-[10px] text-slate-400 block uppercase">Zeit</span><span id="result-time" class="text-base font-mono font-bold text-cyan-300">00:00.0</span></div>
+                    <div><span class="text-[10px] text-slate-400 block uppercase">Platz-Bonus</span><span id="result-bonus" class="text-base font-mono font-bold text-emerald-400">+0 🪙</span></div>
+                    <div><span class="text-[10px] text-slate-400 block uppercase">Münzen</span><span id="result-coins" class="text-base font-mono font-bold text-amber-400">+0 🪙</span></div>
                 </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-2">
-                <button id="btn-to-main-menu" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/40 font-bold text-base rounded-xl active:scale-95">
-                    HAUPTMENÜ
-                </button>
-                <button id="btn-restart" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-base rounded-xl shadow-lg active:scale-95">
-                    NOCHMAL
-                </button>
+            <div class="flex gap-2">
+                <button id="btn-to-main-menu" class="w-full py-3 bg-slate-800 text-cyan-300 border border-cyan-500/40 font-bold text-sm rounded-xl">HAUPTMENÜ</button>
+                <button id="btn-restart" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-sm rounded-xl">NOCHMAL</button>
             </div>
         </div>
     </div>
 
     <script>
         const SURF_PRESETS = {
-            longboard: { maxSpeed: 26, accel: 16, friction: 2.5, turnSpeed: 2.5, jumpForce: 8.0 },
-            windsurf: { maxSpeed: 38, accel: 22, friction: 2.0, turnSpeed: 1.8, jumpForce: 10.0 },
-            kitesurf: { maxSpeed: 33, accel: 28, friction: 2.2, turnSpeed: 3.2, jumpForce: 17.0 }
+            longboard: { maxSpeed: 26, accel: 16, friction: 2.5, turnSpeed: 1.8, jumpForce: 8.0 },
+            windsurf: { maxSpeed: 38, accel: 22, friction: 2.0, turnSpeed: 1.4, jumpForce: 10.0 },
+            kitesurf: { maxSpeed: 33, accel: 28, friction: 2.2, turnSpeed: 2.2, jumpForce: 17.0 }
         };
 
         const TRACK_PRESETS = {
-            lagoon: { points: [{ x: 0, z: 0 }, { x: 30, z: 90 }, { x: 100, z: 160 }, { x: 190, z: 190 }, { x: 270, z: 110 }, { x: 280, z: 10 }, { x: 210, z: -90 }, { x: 110, z: -150 }, { x: 0, z: -110 }, { x: 0, z: -20 }] },
-            volcano: { points: [{ x: 0, z: 0 }, { x: -40, z: 80 }, { x: 20, z: 160 }, { x: 120, z: 140 }, { x: 60, z: 60 }, { x: 150, z: -20 }, { x: 80, z: -120 }, { x: -20, z: -140 }, { x: -60, z: -60 }, { x: 0, z: -20 }] }
+            lagoon: { points: [{ x: 0, z: 0 }, { x: 40, z: 120 }, { x: 140, z: 200 }, { x: 260, z: 220 }, { x: 360, z: 120 }, { x: 370, z: -20 }, { x: 280, z: -120 }, { x: 140, z: -180 }, { x: 0, z: -130 }, { x: 0, z: -20 }] },
+            volcano: { points: [{ x: 0, z: 0 }, { x: -60, z: 110 }, { x: 30, z: 210 }, { x: 170, z: 180 }, { x: 90, z: 80 }, { x: 210, z: -30 }, { x: 110, z: -160 }, { x: -30, z: -180 }, { x: -80, z: -80 }, { x: 0, z: -20 }] }
         };
 
-        const SKINS = {
-            blue: { hex: 0x0284c7, cost: 0 },
-            red: { hex: 0xef4444, cost: 100 },
-            gold: { hex: 0xeab308, cost: 250 }
-        };
-
-        const CONFIG = { WATER_SIZE: 1200, WATER_SEGMENTS: 120, WAVE_SPEED: 1.8, WAVE_HEIGHT: 1.2, CHECKPOINT_RADIUS: 10.0, GRAVITY: 24.0 };
-        let selectedSurfType = 'longboard';
-        let selectedTrack = 'lagoon';
-        let selectedSkin = 'blue';
+        const SKINS = { blue: { hex: 0x0284c7, cost: 0 }, red: { hex: 0xef4444, cost: 100 }, gold: { hex: 0xeab308, cost: 250 } };
+        const CONFIG = { WATER_SIZE: 1400, WATER_SEGMENTS: 110, WAVE_SPEED: 1.8, WAVE_HEIGHT: 1.1, CHECKPOINT_RADIUS: 12.0, GRAVITY: 24.0 };
+        let selectedSurfType = 'longboard', selectedTrack = 'lagoon', selectedSkin = 'blue';
 
         function selectSurfType(type) {
             selectedSurfType = type;
-            document.querySelectorAll('.surf-card').forEach(card => card.classList.replace('border-cyan-400', 'border-slate-700'));
-            const active = document.getElementById(`card-${type}`);
-            if (active) active.classList.replace('border-slate-700', 'border-cyan-400');
+            document.querySelectorAll('.surf-card').forEach(c => c.classList.replace('border-cyan-400', 'border-slate-700'));
+            document.getElementById(`card-${type}`).classList.replace('border-slate-700', 'border-cyan-400');
         }
-
-        function selectTrack(trackKey) {
-            selectedTrack = trackKey;
-            document.querySelectorAll('.track-card').forEach(card => card.classList.replace('border-cyan-400', 'border-slate-700'));
-            const active = document.getElementById(`track-${trackKey}`);
-            if (active) active.classList.replace('border-slate-700', 'border-cyan-400');
+        function selectTrack(t) {
+            selectedTrack = t;
+            document.querySelectorAll('.track-card').forEach(c => c.classList.replace('border-cyan-400', 'border-slate-700'));
+            document.getElementById(`track-${t}`).classList.replace('border-slate-700', 'border-cyan-400');
         }
-
-        function selectSkin(skinKey, cost) {
+        function selectSkin(s, cost) {
             if (window.gameInstance && window.gameInstance.profile) {
                 const p = window.gameInstance.profile;
-                if (!p.unlockedSkins.includes(skinKey)) {
-                    if (p.totalCoins >= cost) {
-                        p.totalCoins -= cost;
-                        p.unlockedSkins.push(skinKey);
-                        p.save();
-                        window.gameInstance.updateProfileUI();
-                    } else {
-                        alert("Nicht genügend Münzen!");
-                        return;
-                    }
+                if (!p.unlockedSkins.includes(s)) {
+                    if (p.totalCoins >= cost) { p.totalCoins -= cost; p.unlockedSkins.push(s); p.save(); window.gameInstance.updateProfileUI(); }
+                    else { alert("Nicht genügend Münzen!"); return; }
                 }
-                selectedSkin = skinKey;
-                document.querySelectorAll('.skin-btn').forEach(btn => btn.classList.replace('border-cyan-400', 'border-slate-700'));
-                const active = document.getElementById(`skin-${skinKey}`);
-                if (active) active.classList.replace('border-slate-700', 'border-cyan-400');
+                selectedSkin = s;
+                document.querySelectorAll('.skin-btn').forEach(b => b.classList.replace('border-cyan-400', 'border-slate-700'));
+                document.getElementById(`skin-${s}`).classList.replace('border-slate-700', 'border-cyan-400');
             }
         }
 
         class ProfileManager {
-            static getAllProfiles() {
-                try {
-                    const list = localStorage.getItem('ocean_surf_all_profiles');
-                    return list ? JSON.parse(list) : ["Surfer 1"];
-                } catch(e) { return ["Surfer 1"]; }
-            }
-            static addProfileName(name) {
-                const list = ProfileManager.getAllProfiles();
-                if (!list.includes(name)) {
-                    list.push(name);
-                    localStorage.setItem('ocean_surf_all_profiles', JSON.stringify(list));
-                }
-            }
+            static getAllProfiles() { try { const l = localStorage.getItem('ocean_surf_all_profiles'); return l ? JSON.parse(l) : ["Surfer 1"]; } catch(e) { return ["Surfer 1"]; } }
+            static addProfileName(n) { const l = ProfileManager.getAllProfiles(); if (!l.includes(n)) { l.push(n); localStorage.setItem('ocean_surf_all_profiles', JSON.stringify(l)); } }
         }
 
         class PlayerProfile {
-            constructor() { 
-                this.name = "Surfer 1";
-                this.level = 1; this.xp = 0; this.nextLevelXp = 100;
-                this.rating = 1000; this.totalCoins = 0;
-                this.unlockedSkins = ['blue'];
-                this.load();
-            }
-            addXp(amount) {
-                this.xp += amount;
-                while (this.xp >= this.nextLevelXp) {
-                    this.xp -= this.nextLevelXp;
-                    this.level++;
-                    this.nextLevelXp = Math.floor(this.nextLevelXp * 1.5);
-                }
-                this.save();
-            }
-            addCoins(amount) {
-                this.totalCoins += amount;
-                this.save();
-            }
+            constructor() { this.name = "Surfer 1"; this.level = 1; this.xp = 0; this.nextLevelXp = 100; this.bestTime = null; this.totalCoins = 0; this.unlockedSkins = ['blue']; this.load(); }
+            addCoins(a) { this.totalCoins += a; this.save(); }
             save() {
                 try {
                     ProfileManager.addProfileName(this.name);
-                    localStorage.setItem(`ocean_surf_profile_${this.name}`, JSON.stringify({
-                        name: this.name, level: this.level, xp: this.xp, nextLevelXp: this.nextLevelXp,
-                        rating: this.rating, totalCoins: this.totalCoins, unlockedSkins: this.unlockedSkins
-                    }));
+                    localStorage.setItem(`ocean_surf_profile_${this.name}`, JSON.stringify({ name: this.name, level: this.level, xp: this.xp, bestTime: this.bestTime, totalCoins: this.totalCoins, unlockedSkins: this.unlockedSkins }));
                     localStorage.setItem('ocean_surf_last_player', this.name);
                 } catch(e) {}
             }
-            load(playerName) {
+            load(pName) {
                 try {
-                    const targetName = playerName || localStorage.getItem('ocean_surf_last_player') || "Surfer 1";
-                    const data = localStorage.getItem(`ocean_surf_profile_${targetName}`);
+                    const target = pName || localStorage.getItem('ocean_surf_last_player') || "Surfer 1";
+                    const data = localStorage.getItem(`ocean_surf_profile_${target}`);
                     if (data) {
                         const p = JSON.parse(data);
-                        this.name = p.name || targetName; this.level = p.level || 1;
-                        this.xp = p.xp || 0; this.nextLevelXp = p.nextLevelXp || 100;
-                        this.rating = p.rating || 1000; this.totalCoins = p.totalCoins || 0;
-                        this.unlockedSkins = p.unlockedSkins || ['blue'];
-                    } else {
-                        this.name = targetName;
-                    }
+                        this.name = p.name || target; this.level = p.level || 1; this.xp = p.xp || 0;
+                        this.bestTime = p.bestTime || null; this.totalCoins = p.totalCoins || 0; this.unlockedSkins = p.unlockedSkins || ['blue'];
+                    } else { this.name = target; }
                 } catch(e) {}
             }
         }
 
-        // --- ANALOGES TOUCH & GESTEN STEUERUNGS SYSTEM ---
         class InputHandler {
             constructor() {
                 this.controls = { steerAmount: 0, gas: false, brake: false, jump: false };
-                this.startPos = { x: 0, y: 0 };
-                this.lastTapTime = 0;
-                this.activeTouchId = null;
-
+                this.startPos = { x: 0, y: 0 }; this.lastTapTime = 0; this.activeTouchId = null;
                 this.joystickBase = document.getElementById('joystick-base');
                 this.joystickStick = document.getElementById('joystick-stick');
                 this.touchZone = document.getElementById('touch-zone');
-
-                this.setupKeyboard();
-                this.setupGestureControls();
+                this.setupKeyboard(); this.setupGestureControls();
             }
-
             setupKeyboard() {
                 window.addEventListener('keydown', (e) => {
-                    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.controls.steerAmount = -1.0;
-                    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.controls.steerAmount = 1.0;
-                    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.controls.gas = true;
-                    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') this.controls.brake = true;
+                    if (e.key === 'ArrowLeft' || e.key === 'a') this.controls.steerAmount = -0.7;
+                    if (e.key === 'ArrowRight' || e.key === 'd') this.controls.steerAmount = 0.7;
+                    if (e.key === 'ArrowUp' || e.key === 'w') this.controls.gas = true;
+                    if (e.key === 'ArrowDown' || e.key === 's') this.controls.brake = true;
                     if (e.key === ' ') this.controls.jump = true;
                 });
                 window.addEventListener('keyup', (e) => {
-                    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.controls.steerAmount = 0;
-                    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.controls.gas = false;
-                    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') this.controls.brake = false;
+                    if (['ArrowLeft','a','ArrowRight','d'].includes(e.key)) this.controls.steerAmount = 0;
+                    if (['ArrowUp','w'].includes(e.key)) this.controls.gas = false;
+                    if (['ArrowDown','s'].includes(e.key)) this.controls.brake = false;
                     if (e.key === ' ') this.controls.jump = false;
                 });
             }
-
             setupGestureControls() {
                 const onStart = (e) => {
-                    e.preventDefault();
-                    if (this.activeTouchId !== null) return;
-
+                    e.preventDefault(); if (this.activeTouchId !== null) return;
                     const touch = e.changedTouches ? e.changedTouches[0] : e;
                     this.activeTouchId = touch.identifier !== undefined ? touch.identifier : 'mouse';
-
-                    // Neutrale Startposition festlegen
                     this.startPos = { x: touch.clientX, y: touch.clientY };
 
-                    // Visuelles Steuerkreuz anzeigen
-                    this.joystickBase.style.left = `${this.startPos.x}px`;
-                    this.joystickBase.style.top = `${this.startPos.y}px`;
-                    this.joystickBase.style.display = 'block';
+                    // Zeige Fadenkreuz & Joystick an
+                    this.joystickBase.style.left = `${this.startPos.x}px`; this.joystickBase.style.top = `${this.startPos.y}px`; this.joystickBase.style.display = 'block';
+                    this.joystickStick.style.left = `${this.startPos.x}px`; this.joystickStick.style.top = `${this.startPos.y}px`; this.joystickStick.style.display = 'block';
 
-                    this.joystickStick.style.left = `${this.startPos.x}px`;
-                    this.joystickStick.style.top = `${this.startPos.y}px`;
-                    this.joystickStick.style.display = 'block';
-
-                    // Doppeltippen-Erkennung für Sprung
                     const now = Date.now();
-                    if (now - this.lastTapTime < 300) {
-                        this.controls.jump = true;
-                        setTimeout(() => this.controls.jump = false, 150);
-                    }
+                    if (now - this.lastTapTime < 320) { this.controls.jump = true; setTimeout(() => this.controls.jump = false, 150); }
                     this.lastTapTime = now;
                 };
-
                 const onMove = (e) => {
-                    if (this.activeTouchId === null) return;
-                    e.preventDefault();
-
+                    if (this.activeTouchId === null) return; e.preventDefault();
                     let touch = null;
-                    if (e.changedTouches) {
-                        for (let t of e.changedTouches) {
-                            if (t.identifier === this.activeTouchId) { touch = t; break; }
-                        }
-                    } else { touch = e; }
-
+                    if (e.changedTouches) { for (let t of e.changedTouches) { if (t.identifier === this.activeTouchId) { touch = t; break; } } } else { touch = e; }
                     if (!touch) return;
 
-                    // Abweichung von der neutralen Position berechnen
                     const deltaX = touch.clientX - this.startPos.x;
                     const deltaY = touch.clientY - this.startPos.y;
-
-                    const maxDist = 80; // Maximaler Steuerungs-Radius
+                    const maxDist = 130; // Größerer Radius für feinfühligere Lenkung
                     const clampedX = Math.max(-maxDist, Math.min(maxDist, deltaX));
                     const clampedY = Math.max(-maxDist, Math.min(maxDist, deltaY));
 
-                    // Stick-Position verschieben
                     this.joystickStick.style.left = `${this.startPos.x + clampedX}px`;
                     this.joystickStick.style.top = `${this.startPos.y + clampedY}px`;
 
-                    // 1. Lenk-Berechnung (X-Achse: -1.0 voll Links, +1.0 voll Rechts)
-                    this.controls.steerAmount = clampedX / maxDist;
-
-                    // 2. Beschleunigen / Bremsen (Y-Achse: Oben = Gas, Unten = Bremse)
-                    if (deltaY < -20) {
-                        this.controls.gas = true;
-                        this.controls.brake = false;
-                    } else if (deltaY > 20) {
-                        this.controls.gas = false;
-                        this.controls.brake = true;
-                    } else {
-                        this.controls.gas = false;
-                        this.controls.brake = false;
-                    }
+                    // Entschärfte analoge Lenkintensität
+                    this.controls.steerAmount = (clampedX / maxDist) * 0.75;
+                    if (deltaY < -25) { this.controls.gas = true; this.controls.brake = false; }
+                    else if (deltaY > 25) { this.controls.gas = false; this.controls.brake = true; }
+                    else { this.controls.gas = false; this.controls.brake = false; }
                 };
-
-                const onEnd = (e) => {
+                const onEnd = () => {
                     if (this.activeTouchId === null) return;
-
-                    this.activeTouchId = null;
-                    this.controls.steerAmount = 0;
-                    this.controls.gas = false;
-                    this.controls.brake = false;
-
-                    this.joystickBase.style.display = 'none';
-                    this.joystickStick.style.display = 'none';
+                    this.activeTouchId = null; this.controls.steerAmount = 0; this.controls.gas = false; this.controls.brake = false;
+                    this.joystickBase.style.display = 'none'; this.joystickStick.style.display = 'none';
                 };
 
-                // Event-Binding an die untere Touch-Zone
                 this.touchZone.addEventListener('touchstart', onStart, { passive: false });
                 this.touchZone.addEventListener('touchmove', onMove, { passive: false });
                 this.touchZone.addEventListener('touchend', onEnd, { passive: false });
                 this.touchZone.addEventListener('touchcancel', onEnd, { passive: false });
-
-                // Desktop Mouse Fallback zum Testen
                 this.touchZone.addEventListener('mousedown', onStart);
-                window.addEventListener('mousemove', onMove);
-                window.addEventListener('mouseup', onEnd);
+                window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onEnd);
             }
         }
 
@@ -513,18 +318,12 @@
                 this.geometry = new THREE.PlaneGeometry(CONFIG.WATER_SIZE, CONFIG.WATER_SIZE, CONFIG.WATER_SEGMENTS, CONFIG.WATER_SEGMENTS);
                 this.geometry.rotateX(-Math.PI / 2);
                 this.posAttribute = this.geometry.attributes.position;
-                
-                this.material = new THREE.MeshPhysicalMaterial({
-                    color: 0x0284c7, emissive: 0x001a33, roughness: 0.1, metalness: 0.1,
-                    transmission: 0.6, ior: 1.333, reflectivity: 0.9, flatShading: true, transparent: true, opacity: 0.93
-                });
+                this.material = new THREE.MeshPhysicalMaterial({ color: 0x0284c7, emissive: 0x001a33, roughness: 0.1, metalness: 0.1, transmission: 0.6, transparent: true, opacity: 0.92 });
                 this.mesh = new THREE.Mesh(this.geometry, this.material);
                 scene.add(this.mesh);
             }
             getWaveHeight(x, z, time) {
-                const w1 = Math.sin(x * 0.04 + time * CONFIG.WAVE_SPEED) * CONFIG.WAVE_HEIGHT;
-                const w2 = Math.cos(z * 0.03 + time * CONFIG.WAVE_SPEED * 1.3) * (CONFIG.WAVE_HEIGHT * 0.8);
-                return w1 + w2;
+                return Math.sin(x * 0.03 + time * CONFIG.WAVE_SPEED) * CONFIG.WAVE_HEIGHT + Math.cos(z * 0.025 + time * CONFIG.WAVE_SPEED * 1.2) * (CONFIG.WAVE_HEIGHT * 0.7);
             }
             update(time) {
                 for (let i = 0; i < this.posAttribute.count; i++) {
@@ -536,109 +335,109 @@
             }
         }
 
-        class SurfEquipmentBuilder {
-            static createBoardShape() {
-                const shape = new THREE.Shape();
-                shape.moveTo(0, 2.2);
-                shape.bezierCurveTo(0.7, 1.5, 0.8, -0.8, 0.5, -2.0);
-                shape.lineTo(-0.5, -2.0);
-                shape.bezierCurveTo(-0.8, -0.8, -0.7, 1.5, 0, 2.2);
-                return shape;
-            }
+        // --- 3D LANDKULISSE (STRAND & BERGE) ---
+        class LandscapeBuilder {
+            static buildLand(scene) {
+                const landGroup = new THREE.Group();
+                // Sandstrand an der Seite
+                const beachGeo = new THREE.PlaneGeometry(350, 1200);
+                beachGeo.rotateX(-Math.PI / 2);
+                const beachMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.9 });
+                const beach = new THREE.Mesh(beachGeo, beachMat);
+                beach.position.set(-350, 0.5, 0);
+                landGroup.add(beach);
 
-            static buildRealisticBoard(skinHex) {
-                const boardGroup = new THREE.Group();
-                const shape = SurfEquipmentBuilder.createBoardShape();
-                const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.18, bevelEnabled: true, bevelSegments: 4, steps: 1, bevelSize: 0.08, bevelThickness: 0.08 });
-                geo.rotateX(Math.PI / 2);
-                
-                const pos = geo.attributes.position;
-                for(let i = 0; i < pos.count; i++) {
-                    const z = pos.getZ(i);
-                    pos.setY(i, pos.getY(i) + Math.pow(z * 0.22, 2) * 0.2);
+                // Berge im Hintergrund
+                for(let i = -500; i <= 500; i += 180) {
+                    const mountainGeo = new THREE.ConeGeometry(90 + Math.random() * 40, 140 + Math.random() * 80, 5);
+                    const mountainMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+                    const mountain = new THREE.Mesh(mountainGeo, mountainMat);
+                    mountain.position.set(-480 - Math.random() * 80, 50, i);
+                    landGroup.add(mountain);
                 }
-                geo.computeVertexNormals();
+                scene.add(landGroup);
+            }
+        }
 
-                const boardMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: skinHex, roughness: 0.15, metalness: 0.2 }));
-                boardGroup.add(boardMesh);
+        // --- SURFEQUIPMENT GENERATOR ---
+        class SurfEquipmentBuilder {
+            static buildEquipment(typeKey, skinHex, isAI = false) {
+                const group = new THREE.Group();
+                // Surfbrett
+                const shape = new THREE.Shape();
+                shape.moveTo(0, 2.2); shape.bezierCurveTo(0.7, 1.5, 0.8, -0.8, 0.5, -2.0);
+                shape.lineTo(-0.5, -2.0); shape.bezierCurveTo(-0.8, -0.8, -0.7, 1.5, 0, 2.2);
+                const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.18, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.08, bevelThickness: 0.08 });
+                geo.rotateX(Math.PI / 2);
+                const boardMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: isAI ? 0xd97706 : skinHex, roughness: 0.2 }));
+                group.add(boardMesh);
 
-                const stringer = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 4.2), new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.5 }));
-                stringer.position.y = 0.02;
-                boardGroup.add(stringer);
+                // Surfer Figur
+                const body = new THREE.Group(); body.position.y = 1.0;
+                body.add(new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.25, 1.2, 8), new THREE.MeshStandardMaterial({ color: isAI ? 0x475569 : 0x0369a1 })));
+                group.add(body);
 
-                const finGeo = new THREE.ConeGeometry(0.18, 0.5, 3);
-                const finMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 });
-                const centerFin = new THREE.Mesh(finGeo, finMat);
-                centerFin.position.set(0, -0.25, -1.6); centerFin.rotation.x = Math.PI / 3;
-                boardGroup.add(centerFin);
-
-                return boardGroup;
+                // Windsegel / Kite
+                if (typeKey === 'windsurf') {
+                    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 4.8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                    mast.position.set(0, 2.3, 0.3); mast.rotation.x = -0.15; group.add(mast);
+                    const sailGeo = new THREE.BufferGeometry();
+                    sailGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0.6, 0.3, 0, 4.5, 0.1, 2.0, 2.0, -0.3]), 3));
+                    sailGeo.computeVertexNormals();
+                    group.add(new THREE.Mesh(sailGeo, new THREE.MeshStandardMaterial({ color: 0xf59e0b, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })));
+                } else if (typeKey === 'kitesurf') {
+                    const kiteGroup = new THREE.Group(); kiteGroup.position.set(0, 9.5, 3.5);
+                    const kite = new THREE.Mesh(new THREE.TorusGeometry(3.0, 0.3, 8, 16, Math.PI), new THREE.MeshStandardMaterial({ color: 0xa855f7 }));
+                    kite.rotation.x = 1.2; kiteGroup.add(kite); group.add(kiteGroup);
+                }
+                return group;
             }
         }
 
         class SurferEntity {
-            constructor(scene, color, isAI = false) {
-                this.scene = scene; this.isAI = isAI;
+            constructor(scene, color, isAI = false, aiIndex = 0) {
+                this.scene = scene; this.isAI = isAI; this.aiIndex = aiIndex;
                 this.position = new THREE.Vector3(0, 0, 0);
-                this.verticalVelocity = 0; this.rotation = 0; this.speed = 0;
-                this.isGrounded = true;
-                this.currentCheckpoint = 0; this.finished = false; this.finishTime = 0;
-                this.group = new THREE.Group(); this.color = color;
+                this.verticalVelocity = 0; this.rotation = 0; this.speed = 0; this.radius = 2.2;
+                this.isGrounded = true; this.currentCheckpoint = 0; this.finished = false; this.finishTime = 0;
+                this.group = new THREE.Group();
                 this.equipPreset(selectedSurfType, selectedSkin);
                 scene.add(this.group);
             }
-
             equipPreset(typeKey, skinKey = 'blue') {
-                this.preset = SURF_PRESETS[typeKey] || SURF_PRESETS.longboard;
                 while(this.group.children.length > 0){ this.group.remove(this.group.children[0]); }
-                
-                const skinHex = this.isAI ? 0xd97706 : (SKINS[skinKey] ? SKINS[skinKey].hex : 0x0284c7);
-                this.group.add(SurfEquipmentBuilder.buildRealisticBoard(skinHex));
-
-                const body = new THREE.Group(); body.position.y = 1.0;
-                body.add(new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.25, 1.2, 8), new THREE.MeshStandardMaterial({ color: this.isAI ? 0xb45309 : 0x0369a1 })));
-                this.group.add(body);
+                const skinHex = SKINS[skinKey] ? SKINS[skinKey].hex : 0x0284c7;
+                this.preset = SURF_PRESETS[typeKey] || SURF_PRESETS.longboard;
+                this.group.add(SurfEquipmentBuilder.buildEquipment(typeKey, skinHex, this.isAI));
             }
-
             setPosition(x, z, angle) {
                 this.position.set(x, 0, z); this.rotation = angle; this.speed = 0;
                 this.group.position.copy(this.position); this.group.rotation.y = this.rotation;
             }
-
             update(delta, inputControls, waterSystem, time, waypoints) {
                 if (this.finished) return;
                 const p = this.preset;
 
                 if (!this.isAI) {
-                    // Analoge Gas / Brems Logik
-                    if (inputControls.gas) {
-                        this.speed += p.accel * delta;
-                    } else if (inputControls.brake) {
-                        this.speed -= p.accel * 1.5 * delta;
-                    } else {
-                        const baseCruiseSpeed = 10;
-                        if (this.speed < baseCruiseSpeed) this.speed += p.accel * 0.5 * delta;
+                    if (inputControls.gas) this.speed += p.accel * delta;
+                    else if (inputControls.brake) this.speed -= p.accel * 1.5 * delta;
+                    else {
+                        if (this.speed < 10) this.speed += p.accel * 0.5 * delta;
                         else this.speed -= p.friction * delta;
                     }
                     this.speed = THREE.MathUtils.clamp(this.speed, 0, p.maxSpeed);
-
-                    // Analoge Stufenlose Lenkung
-                    if (inputControls.steerAmount !== 0) {
-                        this.rotation -= inputControls.steerAmount * p.turnSpeed * delta;
-                    }
-
-                    if (inputControls.jump && this.isGrounded) {
-                        this.verticalVelocity = p.jumpForce; this.isGrounded = false;
-                    }
+                    if (inputControls.steerAmount !== 0) this.rotation -= inputControls.steerAmount * p.turnSpeed * delta;
+                    if (inputControls.jump && this.isGrounded) { this.verticalVelocity = p.jumpForce; this.isGrounded = false; }
                 } else {
                     const targetWay = waypoints[this.currentCheckpoint];
                     if (targetWay) {
-                        const dx = targetWay.x - this.position.x; const dz = targetWay.z - this.position.z;
+                        const offset = (this.aiIndex - 1.5) * 6; // KI Strecken-Verteilung
+                        const dx = (targetWay.x + offset) - this.position.x;
+                        const dz = targetWay.z - this.position.z;
                         let diff = Math.atan2(dx, dz) - this.rotation;
-                        while (diff < -Math.PI) diff += Math.PI * 2;
-                        while (diff > Math.PI) diff -= Math.PI * 2;
-                        this.rotation += Math.sign(diff) * Math.min(Math.abs(diff), p.turnSpeed * 0.9 * delta);
-                        this.speed = THREE.MathUtils.lerp(this.speed, p.maxSpeed * 0.75, delta * 2.0);
+                        while (diff < -Math.PI) diff += Math.PI * 2; while (diff > Math.PI) diff -= Math.PI * 2;
+                        this.rotation += Math.sign(diff) * Math.min(Math.abs(diff), p.turnSpeed * 0.8 * delta);
+                        this.speed = THREE.MathUtils.lerp(this.speed, p.maxSpeed * (0.65 + (this.aiIndex * 0.05)), delta * 2.0);
                     }
                 }
 
@@ -649,12 +448,8 @@
                 if (!this.isGrounded) {
                     this.verticalVelocity -= CONFIG.GRAVITY * delta;
                     this.position.y += this.verticalVelocity * delta;
-                    if (this.position.y <= waveY + 0.1) {
-                        this.position.y = waveY + 0.1; this.isGrounded = true;
-                    }
-                } else {
-                    this.position.y = waveY + 0.1;
-                }
+                    if (this.position.y <= waveY + 0.1) { this.position.y = waveY + 0.1; this.isGrounded = true; }
+                } else { this.position.y = waveY + 0.1; }
 
                 this.group.position.copy(this.position);
                 this.group.rotation.y = this.rotation;
@@ -662,13 +457,11 @@
         }
 
         class TrackSystem {
-            constructor(scene) {
-                this.scene = scene; this.checkpoints = []; this.buoyMeshes = []; this.coins = []; this.coinMeshes = [];
-            }
+            constructor(scene) { this.scene = scene; this.checkpoints = []; this.buoyMeshes = []; this.coins = []; }
             loadTrack(trackKey) {
                 this.buoyMeshes.forEach(b => this.scene.remove(b));
-                this.coinMeshes.forEach(c => this.scene.remove(c));
-                this.buoyMeshes = []; this.coinMeshes = []; this.coins = [];
+                this.coins.forEach(c => this.scene.remove(c.mesh));
+                this.buoyMeshes = []; this.coins = [];
 
                 const trackData = TRACK_PRESETS[trackKey] || TRACK_PRESETS.lagoon;
                 this.checkpoints = trackData.points;
@@ -679,23 +472,21 @@
                     buoy.position.y = 0.8; buoyGroup.add(buoy);
                     buoyGroup.position.set(pt.x, 0, pt.z);
                     this.scene.add(buoyGroup);
-                    this.buoyMeshes.push(buoyGroup);
+                    this.buoyMeshes.push({ group: buoyGroup, pos: pt });
 
                     if (index < this.checkpoints.length - 1) {
                         const nextPt = this.checkpoints[index + 1];
-                        const coinX = (pt.x + nextPt.x) / 2;
-                        const coinZ = (pt.z + nextPt.z) / 2;
+                        const coinX = (pt.x + nextPt.x) / 2; const coinZ = (pt.z + nextPt.z) / 2;
                         const coin = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.2, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.9 }));
                         coin.rotation.x = Math.PI / 2; coin.position.set(coinX, 1.5, coinZ);
                         this.scene.add(coin);
-                        this.coinMeshes.push(coin);
                         this.coins.push({ x: coinX, z: coinZ, collected: false, mesh: coin });
                     }
                 });
             }
             update(time) {
-                this.buoyMeshes.forEach((buoy, idx) => { buoy.position.y = Math.sin(time * 2 + idx) * 0.2; });
-                this.coinMeshes.forEach(coin => { coin.rotation.z += 0.03; });
+                this.buoyMeshes.forEach((b, idx) => { b.group.position.y = Math.sin(time * 2 + idx) * 0.2; });
+                this.coins.forEach(c => { c.mesh.rotation.z += 0.03; });
             }
         }
 
@@ -703,8 +494,7 @@
             constructor() {
                 window.gameInstance = this;
                 this.container = document.getElementById('canvas-container');
-                this.state = 'MENU'; this.clock = new THREE.Clock(); this.raceTime = 0;
-                this.sessionCoins = 0;
+                this.state = 'MENU'; this.clock = new THREE.Clock(); this.raceTime = 0; this.sessionCoins = 0;
                 this.profile = new PlayerProfile();
                 this.initThree(); this.initSystems(); this.setupEvents();
                 this.populateProfileDropdown();
@@ -713,29 +503,34 @@
             }
             initThree() {
                 this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x38bdf8);
-                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
+                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1800);
                 this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 this.container.appendChild(this.renderer.domElement);
                 
-                const sunLight = new THREE.DirectionalLight(0xfffaed, 1.3);
-                sunLight.position.set(150, 200, 100); this.scene.add(sunLight);
+                const sunLight = new THREE.DirectionalLight(0xfffaed, 1.3); sunLight.position.set(150, 200, 100); this.scene.add(sunLight);
                 this.scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+                LandscapeBuilder.buildLand(this.scene);
             }
             initSystems() {
                 this.input = new InputHandler();
                 this.water = new WaterSystem(this.scene);
                 this.track = new TrackSystem(this.scene);
                 this.player = new SurferEntity(this.scene, 0x0284c7, false);
-                this.ai = new SurferEntity(this.scene, 0xf59e0b, true);
+                
+                // 4 KI-Gegner erzeugen
+                this.aiOpponents = [];
+                for(let i = 0; i < 4; i++) {
+                    this.aiOpponents.push(new SurferEntity(this.scene, 0xd97706, true, i));
+                }
+                this.allRacers = [this.player, ...this.aiOpponents];
                 this.resetPositions();
             }
             populateProfileDropdown() {
                 const select = document.getElementById('player-profile-select');
                 select.innerHTML = '';
-                const allNames = ProfileManager.getAllProfiles();
-                allNames.forEach(name => {
+                ProfileManager.getAllProfiles().forEach(name => {
                     const opt = document.createElement('option');
                     opt.value = name; opt.innerText = name;
                     if (name === this.profile.name) opt.selected = true;
@@ -745,17 +540,23 @@
             updateProfileUI() {
                 this.populateProfileDropdown();
                 document.getElementById('profile-level').innerText = this.profile.level;
-                document.getElementById('profile-rating').innerText = this.profile.rating;
+                document.getElementById('profile-best-time').innerText = this.profile.bestTime ? `${(this.profile.bestTime % 60).toFixed(1)}s` : '--:--';
                 document.getElementById('profile-total-coins').innerText = `🪙 ${this.profile.totalCoins}`;
             }
             resetPositions() {
                 this.track.loadTrack(selectedTrack);
                 const startPt = this.track.checkpoints[0];
                 this.player.equipPreset(selectedSurfType, selectedSkin);
-                this.player.setPosition(startPt.x - 3, startPt.z - 10, 0);
-                this.ai.setPosition(startPt.x + 3, startPt.z - 10, 0);
-                this.player.currentCheckpoint = 1; this.ai.currentCheckpoint = 1;
-                this.player.finished = false; this.ai.finished = false;
+                this.player.setPosition(startPt.x, startPt.z - 15, 0);
+
+                this.aiOpponents.forEach((ai, idx) => {
+                    ai.equipPreset('longboard');
+                    const offsetX = (idx - 1.5) * 7;
+                    ai.setPosition(startPt.x + offsetX, startPt.z - (10 + idx * 4), 0);
+                    ai.currentCheckpoint = 1; ai.finished = false;
+                });
+
+                this.player.currentCheckpoint = 1; this.player.finished = false;
                 this.raceTime = 0; this.sessionCoins = 0;
                 document.getElementById('hud-coins').innerText = `🪙 0`;
                 document.getElementById('wrong-way-banner').classList.add('hidden');
@@ -766,44 +567,32 @@
                     this.camera.updateProjectionMatrix();
                     this.renderer.setSize(window.innerWidth, window.innerHeight);
                 });
-
                 document.getElementById('player-profile-select').addEventListener('change', (e) => {
-                    this.profile.load(e.target.value);
-                    this.updateProfileUI();
+                    this.profile.load(e.target.value); this.updateProfileUI();
                 });
-
                 document.getElementById('btn-create-profile').addEventListener('click', () => {
                     const newName = prompt("Gib einen neuen Spielernamen ein:");
                     if (newName && newName.trim()) {
-                        this.profile = new PlayerProfile();
-                        this.profile.name = newName.trim();
-                        this.profile.save();
-                        this.updateProfileUI();
+                        this.profile = new PlayerProfile(); this.profile.name = newName.trim();
+                        this.profile.save(); this.updateProfileUI();
                     }
                 });
-
                 document.getElementById('btn-start-game').addEventListener('click', () => {
                     document.getElementById('modal-start').classList.add('hidden');
                     document.getElementById('hud-top').classList.remove('hidden');
-                    document.getElementById('touch-hint').classList.remove('hidden');
-                    this.resetPositions();
-                    this.startCountdown();
+                    this.resetPositions(); this.startCountdown();
                 });
                 document.getElementById('btn-restart').addEventListener('click', () => {
                     document.getElementById('modal-result').classList.add('hidden');
                     this.resetPositions(); this.startCountdown();
                 });
-                
                 const goToMenu = () => {
-                    this.state = 'MENU';
-                    this.updateProfileUI();
+                    this.state = 'MENU'; this.updateProfileUI();
                     document.getElementById('modal-result').classList.add('hidden');
                     document.getElementById('hud-top').classList.add('hidden');
-                    document.getElementById('touch-hint').classList.add('hidden');
                     document.getElementById('modal-start').classList.remove('hidden');
                     this.resetPositions();
                 };
-
                 document.getElementById('btn-to-main-menu').addEventListener('click', goToMenu);
                 document.getElementById('btn-in-game-menu').addEventListener('click', goToMenu);
             }
@@ -813,22 +602,47 @@
                 banner.classList.remove('hidden'); banner.innerText = '3';
                 const interval = setInterval(() => {
                     count--;
-                    if (count > 0) { banner.innerText = count.toString(); }
+                    if (count > 0) banner.innerText = count.toString();
                     else if (count === 0) { banner.innerText = 'LOS!'; this.state = 'RACING'; }
                     else { banner.classList.add('hidden'); clearInterval(interval); }
                 }, 1000);
+            }
+            handleCollisions() {
+                // Kollisionsphysik zwischen allen Surfern & Bojen
+                for (let i = 0; i < this.allRacers.length; i++) {
+                    for (let j = i + 1; j < this.allRacers.length; j++) {
+                        const r1 = this.allRacers[i]; const r2 = this.allRacers[j];
+                        const dist = Math.hypot(r1.position.x - r2.position.x, r1.position.z - r2.position.z);
+                        if (dist < (r1.radius + r2.radius)) {
+                            // Tempo-Reduzierung & Richtungs-Prall
+                            r1.speed *= 0.6; r2.speed *= 0.6;
+                            r1.rotation += 0.2; r2.rotation -= 0.2;
+                        }
+                    }
+                    // Bojen-Kollision
+                    const r = this.allRacers[i];
+                    this.track.buoyMeshes.forEach(b => {
+                        const distToBuoy = Math.hypot(r.position.x - b.pos.x, r.position.z - b.pos.z);
+                        if (distToBuoy < 2.5) {
+                            r.speed *= 0.5; r.rotation += 0.3;
+                        }
+                    });
+                }
             }
             updateGameLogic(delta, time) {
                 if (this.state === 'RACING') {
                     this.raceTime += delta;
                     this.player.update(delta, this.input.controls, this.water, time, this.track.checkpoints);
-                    this.ai.update(delta, {}, this.water, time, this.track.checkpoints);
-                    this.checkCheckpoints(this.player); this.checkCheckpoints(this.ai);
+                    this.aiOpponents.forEach(ai => ai.update(delta, {}, this.water, time, this.track.checkpoints));
+                    
+                    this.handleCollisions();
+                    this.checkCheckpoints(this.player);
+                    this.aiOpponents.forEach(ai => this.checkCheckpoints(ai));
                     this.checkCoins();
                     this.checkWrongWay();
                     this.updateHUD();
                 }
-                const targetCamPos = new THREE.Vector3(this.player.position.x - Math.sin(this.player.rotation) * 14, this.player.position.y + 6, this.player.position.z - Math.cos(this.player.rotation) * 14);
+                const targetCamPos = new THREE.Vector3(this.player.position.x - Math.sin(this.player.rotation) * 16, this.player.position.y + 7, this.player.position.z - Math.cos(this.player.rotation) * 16);
                 this.camera.position.lerp(targetCamPos, delta * 5.0);
                 this.camera.lookAt(new THREE.Vector3(this.player.position.x, this.player.position.y + 2, this.player.position.z));
             }
@@ -844,10 +658,8 @@
             checkCoins() {
                 this.track.coins.forEach(c => {
                     if (!c.collected && Math.hypot(this.player.position.x - c.x, this.player.position.z - c.z) < 3.5) {
-                        c.collected = true;
-                        this.scene.remove(c.mesh);
-                        this.sessionCoins++;
-                        document.getElementById('hud-coins').innerText = `🪙 ${this.sessionCoins}`;
+                        c.collected = true; this.scene.remove(c.mesh);
+                        this.sessionCoins++; document.getElementById('hud-coins').innerText = `🪙 ${this.sessionCoins}`;
                     }
                 });
             }
@@ -866,31 +678,43 @@
                 document.getElementById('hud-speed').innerText = `${Math.round((this.player.speed / p.maxSpeed) * 55)} km/h`;
                 const mins = Math.floor(this.raceTime / 60); const secs = (this.raceTime % 60).toFixed(1);
                 document.getElementById('hud-timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
+                
+                // Live Platzierung berechnen
+                let rank = 1;
+                this.aiOpponents.forEach(ai => {
+                    if (ai.currentCheckpoint > this.player.currentCheckpoint) rank++;
+                });
+                document.getElementById('hud-rank').innerText = `${rank} / 5`;
                 document.getElementById('hud-progress').innerText = `${Math.round((this.player.currentCheckpoint / this.track.checkpoints.length) * 100)}%`;
             }
             finishRace() {
                 this.state = 'FINISHED';
                 document.getElementById('wrong-way-banner').classList.add('hidden');
-                document.getElementById('touch-hint').classList.add('hidden');
                 
                 const totalSecs = this.player.finishTime || this.raceTime;
                 const mins = Math.floor(totalSecs / 60); const secs = (totalSecs % 60).toFixed(1);
                 document.getElementById('result-time').innerText = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
-                document.getElementById('result-coins').innerText = `+${this.sessionCoins}`;
+                
+                // Berechne Platzierung & Bonuspunkte
+                let finishedAhead = 0;
+                this.aiOpponents.forEach(ai => { if (ai.finishTime && ai.finishTime < totalSecs) finishedAhead++; });
+                const finalRank = finishedAhead + 1;
+                
+                let rankBonusCoins = Math.max(0, (6 - finalRank) * 30);
+                document.getElementById('result-bonus').innerText = `+${rankBonusCoins} 🪙`;
+                document.getElementById('result-coins').innerText = `+${this.sessionCoins} 🪙`;
+                document.getElementById('result-title').innerText = `${finalRank}. PLATZ`;
+                document.getElementById('result-subtitle').innerText = finalRank === 1 ? 'Glückwunsch! Du hast alle 4 Gegner geschlagen!' : 'Gutes Rennen! Reicht es fürs nächste Mal für Platz 1?';
 
-                const playerWon = this.player.finishTime <= (this.ai.finishTime || Infinity);
-                document.getElementById('result-title').innerText = playerWon ? 'SIEG!' : '2. PLATZ';
-                document.getElementById('result-subtitle').innerText = playerWon ? 'Du hast das Surf-Rennen gewonnen!' : 'Knapp verloren! Versuche es gleich noch einmal.';
-
-                this.profile.addCoins(this.sessionCoins);
-                this.profile.addXp((playerWon ? 120 : 50) + (this.sessionCoins * 10));
+                // Highscore / Bestzeit speichern
+                if (!this.profile.bestTime || totalSecs < this.profile.bestTime) this.profile.bestTime = totalSecs;
+                this.profile.addCoins(this.sessionCoins + rankBonusCoins);
                 document.getElementById('modal-result').classList.remove('hidden');
             }
             animate() {
                 requestAnimationFrame(this.animate);
                 const delta = Math.min(this.clock.getDelta(), 0.1); const time = this.clock.getElapsedTime();
-                this.water.update(time);
-                this.track.update(time);
+                this.water.update(time); this.track.update(time);
                 this.updateGameLogic(delta, time);
                 this.renderer.render(this.scene, this.camera);
             }
