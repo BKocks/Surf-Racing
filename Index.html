@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ocean Surf Racing</title>
+    <!-- Three.js 3D Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0284c7;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .interactive {
+            pointer-events: auto;
+        }
+        .touch-btn:active {
+            transform: scale(0.92);
+            filter: brightness(1.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Render Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Layer Overhead -->
+    <div id="ui-layer" class="flex flex-col justify-between p-4 sm:p-6 text-white">
+        
+        <!-- Header / Status Leiste (HUD) -->
+        <div id="hud-top" class="flex justify-between items-start w-full max-w-4xl mx-auto hidden">
+            <div class="bg-slate-900/80 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-3 px-5 shadow-lg flex items-center space-x-4">
+                <div class="text-center">
+                    <div class="text-xs text-cyan-300 font-semibold uppercase tracking-wider">Position</div>
+                    <div id="hud-rank" class="text-3xl font-extrabold text-yellow-400">1.</div>
+                </div>
+                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="text-center">
+                    <div class="text-xs text-cyan-300 font-semibold uppercase tracking-wider">Fortschritt</div>
+                    <div id="hud-progress" class="text-xl font-bold">0%</div>
+                </div>
+                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="text-center">
+                    <div class="text-xs text-cyan-300 font-semibold uppercase tracking-wider">Wind</div>
+                    <div id="hud-wind" class="text-lg font-bold text-amber-300">↗ 12 kn</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/80 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-3 px-5 shadow-lg flex items-center space-x-4">
+                <div class="text-center">
+                    <div class="text-xs text-cyan-300 font-semibold uppercase tracking-wider">Level <span id="hud-level-val" class="text-yellow-400 font-bold">1</span></div>
+                    <div id="hud-timer" class="text-xl font-mono font-bold text-cyan-200">00:00.0</div>
+                </div>
+                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="text-center">
+                    <div class="text-xs text-cyan-300 font-semibold uppercase tracking-wider">Tempo</div>
+                    <div id="hud-speed" class="text-xl font-bold text-emerald-400">0 km/h</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mitte: Countdown & Feedback -->
+        <div id="hud-center" class="flex flex-col items-center justify-center my-auto pointer-events-none">
+            <div id="countdown-banner" class="text-7xl sm:text-9xl font-black italic tracking-wider text-amber-400 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] hidden transition-all scale-100">
+                3
+            </div>
+            <div id="trick-feedback" class="text-2xl sm:text-4xl font-black text-amber-300 italic opacity-0 transition-opacity duration-300 drop-shadow-md">
+                HIGH AIR JUMP! +50 XP
+            </div>
+            <div id="checkpoint-feedback" class="text-xl sm:text-3xl font-extrabold text-cyan-300 italic opacity-0 transition-opacity duration-300 drop-shadow-md">
+                BOJE PASSIERT!
+            </div>
+        </div>
+
+        <!-- Touch-Steuerung (Mobile UX) -->
+        <div id="touch-controls" class="interactive flex justify-between items-end w-full max-w-4xl mx-auto pb-2 hidden sm:hidden">
+            <div class="flex space-x-3">
+                <button id="btn-left" class="touch-btn w-20 h-20 bg-slate-900/70 border-2 border-cyan-400/50 rounded-full flex items-center justify-center text-3xl active:bg-cyan-600/60 shadow-xl backdrop-blur-sm">
+                    ◀
+                </button>
+                <button id="btn-right" class="touch-btn w-20 h-20 bg-slate-900/70 border-2 border-cyan-400/50 rounded-full flex items-center justify-center text-3xl active:bg-cyan-600/60 shadow-xl backdrop-blur-sm">
+                    ▶
+                </button>
+            </div>
+            <div class="flex space-x-3">
+                <button id="btn-brake" class="touch-btn w-16 h-16 bg-slate-900/70 border-2 border-rose-400/50 rounded-full flex items-center justify-center text-xl active:bg-rose-600/60 shadow-xl backdrop-blur-sm">
+                    🛑
+                </button>
+                <button id="btn-jump" class="touch-btn w-16 h-16 bg-purple-600/80 border-2 border-purple-300 rounded-full flex items-center justify-center text-2xl active:bg-purple-700 shadow-xl backdrop-blur-sm">
+                    🦘
+                </button>
+                <button id="btn-gas" class="touch-btn w-20 h-20 bg-gradient-to-tr from-amber-500 to-yellow-400 border-2 border-yellow-200 rounded-full flex items-center justify-center text-3xl text-slate-950 font-bold active:scale-95 shadow-xl">
+                    ⚡
+                </button>
+            </div>
+        </div>
+
+        <!-- Hauptmenü Modal -->
+        <div id="modal-start" class="interactive absolute inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-cyan-500/40 rounded-3xl p-6 sm:p-8 max-w-xl w-full text-center shadow-2xl relative overflow-y-auto max-h-[95vh]">
+                <h1 class="text-4xl sm:text-5xl font-black italic tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-amber-300 mb-1">
+                    OCEAN SURF
+                </h1>
+                <p class="text-cyan-200 text-xs sm:text-sm font-medium tracking-widest uppercase mb-4">Racing</p>
+
+                <div class="bg-slate-800/80 rounded-2xl p-3 mb-6 flex justify-between items-center border border-slate-700 text-xs sm:text-sm">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-cyan-600 rounded-full flex items-center justify-center font-black text-lg">🏄</div>
+                        <div class="text-left">
+                            <div class="font-bold text-white">Surfer Profil</div>
+                            <div class="text-cyan-400 text-xs">Skill Rating (MMR): <span id="profile-rating" class="font-bold text-amber-300">1000</span></div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-yellow-400">Level <span id="profile-level">1</span></div>
+                        <div class="text-xs text-slate-400"><span id="profile-xp">0</span> / <span id="profile-next-xp">100</span> XP</div>
+                    </div>
+                </div>
+
+                <h3 class="text-sm font-bold text-cyan-300 uppercase tracking-wider mb-3 text-left">Wähle dein Surfgerät:</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                    <div id="card-longboard" onclick="selectSurfType('longboard')" class="surf-card bg-slate-800 border-2 border-cyan-400 rounded-2xl p-3 text-left cursor-pointer transition hover:border-cyan-300">
+                        <div class="text-2xl mb-1">🏄‍♂️</div>
+                        <div class="font-bold text-cyan-200 text-sm">Longboard</div>
+                        <div class="text-[11px] text-slate-400 mb-2">Hohe Stabilität & Einsteigerfreundlich</div>
+                    </div>
+
+                    <div id="card-windsurf" onclick="selectSurfType('windsurf')" class="surf-card bg-slate-800/60 border border-slate-700 rounded-2xl p-3 text-left cursor-pointer transition hover:border-cyan-400">
+                        <div class="text-2xl mb-1">⛵</div>
+                        <div class="font-bold text-cyan-200 text-sm">Windsurfen</div>
+                        <div class="text-[11px] text-slate-400 mb-2">Hoher Top-Speed bei richtigem Wind</div>
+                    </div>
+
+                    <div id="card-kitesurf" onclick="selectSurfType('kitesurf')" class="surf-card bg-slate-800/60 border border-slate-700 rounded-2xl p-3 text-left cursor-pointer transition hover:border-cyan-400">
+                        <div class="text-2xl mb-1">🪁</div>
+                        <div class="font-bold text-cyan-200 text-sm">Kitesurfen</div>
+                        <div class="text-[11px] text-slate-400 mb-2">Extrem agil & gigantische Sprünge</div>
+                    </div>
+                </div>
+
+                <button id="btn-start-game" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-black text-xl rounded-2xl shadow-lg transform transition active:scale-95">
+                    RENNEN STARTEN
+                </button>
+            </div>
+        </div>
+
+        <!-- Ergebnis Modal -->
+        <div id="modal-result" class="interactive absolute inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+            <div class="bg-slate-900 border border-cyan-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl">
+                <div id="result-badge" class="text-6xl mb-2">🏆</div>
+                <h2 id="result-title" class="text-3xl font-black text-amber-400 uppercase tracking-wide mb-1">SIEG!</h2>
+                <p id="result-subtitle" class="text-slate-300 text-sm mb-4">Du hast das Surf-Rennen gewonnen!</p>
+
+                <div class="bg-slate-800/80 rounded-2xl p-4 text-center space-y-3 mb-4 border border-slate-700">
+                    <div>
+                        <span class="text-xs text-slate-400 block uppercase">Gesamtzeit</span>
+                        <span id="result-time" class="text-2xl font-mono font-bold text-cyan-300">00:00.0</span>
+                    </div>
+                    <div class="flex justify-around border-t border-slate-700 pt-3">
+                        <div>
+                            <span class="text-xs text-slate-400 block uppercase">Platzierung</span>
+                            <span id="result-rank" class="text-lg font-bold text-yellow-400">Platz 1</span>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 block uppercase">Gegnerzeit</span>
+                            <span id="result-ai-time" class="text-lg font-mono font-bold text-slate-300">00:00.0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/50 border border-slate-700/80 rounded-2xl p-3 mb-6 text-left space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-300">Erhaltene Erfahrung:</span>
+                        <span id="result-xp-gained" class="font-bold text-emerald-400">+120 XP</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-300">Neues Skill-Rating (MMR):</span>
+                        <span id="result-rating-change" class="font-bold text-amber-300">1025 (+25)</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2 mt-2 overflow-hidden">
+                        <div id="result-xp-bar" class="bg-gradient-to-r from-cyan-400 to-emerald-400 h-2 rounded-full transition-all duration-500" style="width: 40%"></div>
+                    </div>
+                </div>
+
+                <button id="btn-restart" class="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xl rounded-2xl shadow-lg transform transition active:scale-95">
+                    NÄCHSTES RENNEN
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Hauptskript: Game Engine & Logik -->
+    <script>
+        const SURF_PRESETS = {
+            longboard: { name: 'Longboard', maxSpeed: 24, accel: 14, friction: 3.0, turnSpeed: 2.5, driftFactor: 0.1, jumpForce: 7.0, windDependence: 0.1 },
+            windsurf: { name: 'Windsurfen', maxSpeed: 36, accel: 20, friction: 2.2, turnSpeed: 1.8, driftFactor: 0.35, jumpForce: 10.0, windDependence: 0.75 },
+            kitesurf: { name: 'Kitesurfen', maxSpeed: 31, accel: 26, friction: 2.5, turnSpeed: 3.2, driftFactor: 0.6, jumpForce: 17.0, windDependence: 0.4 }
+        };
+
+        const CONFIG = { WATER_SIZE: 1200, WATER_SEGMENTS: 90, WAVE_SPEED: 1.8, WAVE_HEIGHT: 0.9, CHECKPOINT_RADIUS: 10.0, GRAVITY: 24.0 };
+        let selectedSurfType = 'longboard';
+
+        function selectSurfType(type) {
+            selectedSurfType = type;
+            document.querySelectorAll('.surf-card').forEach(card => {
+                card.classList.remove('border-cyan-400', 'bg-slate-800');
+                card.classList.add('border-slate-700', 'bg-slate-800/60');
+            });
+            const activeCard = document.getElementById(`card-${type}`);
+            if (activeCard) {
+                activeCard.classList.remove('border-slate-700', 'bg-slate-800/60');
+                activeCard.classList.add('border-cyan-400', 'bg-slate-800');
+            }
+        }
+
+        class PlayerProfile {
+            constructor() {
+                this.level = 1; this.xp = 0; this.nextLevelXp = 100; this.rating = 1000;
+                this.load();
+            }
+            addXp(amount) {
+                this.xp += amount;
+                let leveledUp = false;
+                while (this.xp >= this.nextLevelXp) {
+                    this.xp -= this.nextLevelXp;
+                    this.level++;
+                    this.nextLevelXp = Math.floor(this.nextLevelXp * 1.5);
+                    leveledUp = true;
+                }
+                this.save();
+                return { leveledUp, currentXp: this.xp, nextLevelXp: this.nextLevelXp };
+            }
+            updateRating(playerWon, aiRating) {
+                const expectedScore = 1 / (1 + Math.pow(10, (aiRating - this.rating) / 400));
+                const actualScore = playerWon ? 1 : 0;
+                const change = Math.round(32 * (actualScore - expectedScore));
+                this.rating = Math.max(400, this.rating + change);
+                this.save();
+                return change;
+            }
+            save() {
+                try { localStorage.setItem('ocean_surf_profile', JSON.stringify({ level: this.level, xp: this.xp, nextLevelXp: this.nextLevelXp, rating: this.rating })); } catch(e) {}
+            }
+            load() {
+                try {
+                    const data = localStorage.getItem('ocean_surf_profile');
+                    if (data) {
+                        const p = JSON.parse(data);
+                        this.level = p.level || 1; this.xp = p.xp || 0; this.nextLevelXp = p.nextLevelXp || 100; this.rating = p.rating || 1000;
+                    }
+                } catch(e) {}
+            }
+        }
+
+        class AudioEngine {
+            constructor() { this.ctx = null; this.surfGainNode = null; this.isInitialized = false; }
+            init() {
+                if (this.isInitialized) return;
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                    const bufferSize = this.ctx.sampleRate * 2;
+                    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    const output = noiseBuffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+                    const whiteNoise = this.ctx.createBufferSource();
+                    whiteNoise.buffer = noiseBuffer; whiteNoise.loop = true;
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'lowpass'; filter.frequency.setValueAtTime(450, this.ctx.currentTime);
+                    this.surfGainNode = this.ctx.createGain();
+                    this.surfGainNode.gain.setValueAtTime(0.04, this.ctx.currentTime);
+                    whiteNoise.connect(filter); filter.connect(this.surfGainNode);
+                    this.surfGainNode.connect(this.ctx.destination);
+                    whiteNoise.start();
+                    this.isInitialized = true;
+                } catch (e) {}
+            }
+            setSurfVolume(speedRatio) {
+                if (!this.surfGainNode || !this.ctx) return;
+                this.surfGainNode.gain.setTargetAtTime(0.02 + Math.min(speedRatio, 1.2) * 0.14, this.ctx.currentTime, 0.1);
+            }
+            playBeep(freq, duration) {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + duration);
+            }
+            playJumpSound() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(520, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+            }
+            playCheckpointSound() { this.playBeep(587.33, 0.12); setTimeout(() => this.playBeep(880, 0.22), 90); }
+            playCountdownBeep(isFinal) { this.playBeep(isFinal ? 880 : 440, isFinal ? 0.4 : 0.2); }
+        }
+
+        class InputHandler {
+            constructor() {
+                this.controls = { left: false, right: false, gas: false, brake: false, jump: false };
+                this.setupKeyboard(); this.setupTouch();
+            }
+            setupKeyboard() {
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.controls.left = true;
+                    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.controls.right = true;
+                    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.controls.gas = true;
+                    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') this.controls.brake = true;
+                    if (e.key === ' ' || e.key === 'Spacebar') this.controls.jump = true;
+                });
+                window.addEventListener('keyup', (e) => {
+                    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.controls.left = false;
+                    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.controls.right = false;
+                    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.controls.gas = false;
+                    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') this.controls.brake = false;
+                    if (e.key === ' ' || e.key === 'Spacebar') this.controls.jump = false;
+                });
+            }
+            setupTouch() {
+                const bindTouch = (id, key) => {
+                    const btn = document.getElementById(id); if (!btn) return;
+                    btn.addEventListener('touchstart', (e) => { e.preventDefault(); this.controls[key] = true; });
+                    btn.addEventListener('touchend', (e) => { e.preventDefault(); this.controls[key] = false; });
+                    btn.addEventListener('mousedown', (e) => { e.preventDefault(); this.controls[key] = true; });
+                    btn.addEventListener('mouseup', (e) => { e.preventDefault(); this.controls[key] = false; });
+                };
+                bindTouch('btn-left', 'left'); bindTouch('btn-right', 'right');
+                bindTouch('btn-gas', 'gas'); bindTouch('btn-brake', 'brake'); bindTouch('btn-jump', 'jump');
+            }
+        }
+
+        class WaterSystem {
+            constructor(scene) {
+                this.geometry = new THREE.PlaneGeometry(CONFIG.WATER_SIZE, CONFIG.WATER_SIZE, CONFIG.WATER_SEGMENTS, CONFIG.WATER_SEGMENTS);
+                this.geometry.rotateX(-Math.PI / 2);
+                this.posAttribute = this.geometry.attributes.position;
+                this.material = new THREE.MeshPhongMaterial({ color: 0x006699, emissive: 0x001122, specular: 0x77eeff, shininess: 90, flatShading: true, transparent: true, opacity: 0.92 });
+                this.mesh = new THREE.Mesh(this.geometry, this.material);
+                scene.add(this.mesh);
+            }
+            getWaveHeight(x, z, time) {
+                return Math.sin(x * 0.05 + time * CONFIG.WAVE_SPEED) * CONFIG.WAVE_HEIGHT + Math.cos(z * 0.04 + time * CONFIG.WAVE_SPEED * 1.2) * (CONFIG.WAVE_HEIGHT * 0.7);
+            }
+            update(time) {
+                for (let i = 0; i < this.posAttribute.count; i++) {
+                    const x = this.posAttribute.getX(i); const z = this.posAttribute.getZ(i);
+                    this.posAttribute.setY(i, this.getWaveHeight(x, z, time));
+                }
+                this.posAttribute.needsUpdate = true;
+                this.geometry.computeVertexNormals();
+            }
+        }
+
+        class SurferEntity {
+            constructor(scene, color, isAI = false) {
+                this.scene = scene; this.isAI = isAI;
+                this.position = new THREE.Vector3(0, 0, 0);
+                this.velocity = new THREE.Vector3(0, 0, 0);
+                this.verticalVelocity = 0; this.rotation = 0; this.speed = 0;
+                this.isGrounded = true; this.airTime = 0;
+                this.currentCheckpoint = 0; this.finished = false; this.finishTime = 0;
+                this.group = new THREE.Group(); this.color = color;
+                this.equipPreset(selectedSurfType);
+                scene.add(this.group);
+            }
+            equipPreset(typeKey) {
+                this.presetKey = typeKey; this.preset = SURF_PRESETS[typeKey] || SURF_PRESETS.longboard;
+                while(this.group.children.length > 0){ this.group.remove(this.group.children[0]); }
+
+                const boardGeo = new THREE.BoxGeometry(1.2, 0.2, 3.8);
+                const boardMat = new THREE.MeshStandardMaterial({ color: this.color, roughness: 0.3 });
+                this.boardMesh = new THREE.Mesh(boardGeo, boardMat);
+                this.group.add(this.boardMesh);
+
+                const bodyGroup = new THREE.Group(); bodyGroup.position.y = 1.0;
+                const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.25, 1.1, 8), new THREE.MeshStandardMaterial({ color: this.isAI ? 0xd97706 : 0x0284c7 }));
+                bodyGroup.add(torso);
+                this.group.add(bodyGroup);
+            }
+            setPosition(x, z, angle) {
+                this.position.set(x, 0, z); this.rotation = angle; this.speed = 0;
+                this.group.position.copy(this.position); this.group.rotation.y = this.rotation;
+            }
+            update(delta, inputControls, waterSystem, time, waypoints, windVector, gameInstance) {
+                if (this.finished) return;
+                const p = this.preset;
+
+                if (!this.isAI) {
+                    if (inputControls.gas) this.speed += p.accel * delta;
+                    else if (inputControls.brake) this.speed -= p.accel * 1.5 * delta;
+                    else this.speed -= p.friction * delta;
+                    this.speed = THREE.MathUtils.clamp(this.speed, 0, p.maxSpeed);
+
+                    if (inputControls.left) this.rotation += p.turnSpeed * delta;
+                    if (inputControls.right) this.rotation -= p.turnSpeed * delta;
+                    if (inputControls.jump && this.isGrounded) {
+                        this.verticalVelocity = p.jumpForce; this.isGrounded = false;
+                        if (gameInstance && gameInstance.audio) gameInstance.audio.playJumpSound();
+                    }
+                } else {
+                    const targetWay = waypoints[this.currentCheckpoint];
+                    if (targetWay) {
+                        const dx = targetWay.x - this.position.x; const dz = targetWay.z - this.position.z;
+                        let diff = Math.atan2(dx, dz) - this.rotation;
+                        while (diff < -Math.PI) diff += Math.PI * 2;
+                        while (diff > Math.PI) diff -= Math.PI * 2;
+                        this.rotation += Math.sign(diff) * Math.min(Math.abs(diff), p.turnSpeed * 0.9 * delta);
+                        this.speed = THREE.MathUtils.lerp(this.speed, p.maxSpeed * 0.8, delta * 2.0);
+                    }
+                }
+
+                this.position.x += Math.sin(this.rotation) * this.speed * delta;
+                this.position.z += Math.cos(this.rotation) * this.speed * delta;
+                const waveY = waterSystem.getWaveHeight(this.position.x, this.position.z, time);
+
+                if (!this.isGrounded) {
+                    this.verticalVelocity -= CONFIG.GRAVITY * delta;
+                    this.position.y += this.verticalVelocity * delta;
+                    this.airTime += delta;
+                    if (this.position.y <= waveY + 0.1) {
+                        this.position.y = waveY + 0.1; this.isGrounded = true;
+                        if (this.airTime > 0.5 && !this.isAI && gameInstance) gameInstance.onTrickLand(this.airTime);
+                        this.airTime = 0;
+                    }
+                } else {
+                    this.position.y = waveY + 0.1;
+                }
+
+                this.group.position.copy(this.position);
+                this.group.rotation.y = this.rotation;
+            }
+        }
+
+        class TrackSystem {
+            constructor(scene) {
+                this.scene = scene; this.checkpoints = []; this.buoyMeshes = [];
+                this.generateTrack();
+            }
+            generateTrack() {
+                const points = [{ x: 0, z: 0 }, { x: 30, z: 90 }, { x: 100, z: 160 }, { x: 190, z: 190 }, { x: 270, z: 110 }, { x: 280, z: 10 }, { x: 210, z: -90 }, { x: 110, z: -150 }, { x: 0, z: -110 }, { x: 0, z: -20 }];
+                this.checkpoints = points;
+                points.forEach((pt, index) => {
+                    const buoyGroup = new THREE.Group();
+                    const buoy = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.2, 2.5, 8), new THREE.MeshStandardMaterial({ color: index === points.length - 1 ? 0xef4444 : 0x10b981 }));
+                    buoy.position.y = 0.8; buoyGroup.add(buoy);
+                    buoyGroup.position.set(pt.x, 0, pt.z);
+                    this.scene.add(buoyGroup); this.buoyMeshes.push(buoyGroup);
+                });
+            }
+            updateBuoys(time) {
+                this.buoyMeshes.forEach((buoy, idx) => { buoy.position.y = Math.sin(time * 2 + idx) * 0.2; });
+            }
+        }
+
+        class Game {
+            constructor() {
+                this.container = document.getElementById('canvas-container');
+                this.state = 'MENU'; this.clock = new THREE.Clock(); this.raceTime = 0;
+                this.windVector = new THREE.Vector2(0.6, 0.8).normalize();
+                this.profile = new PlayerProfile();
+                this.initThree(); this.initSystems(); this.setupEvents();
+                this.updateProfileUI();
+                this.animate = this.animate.bind(this);
+                requestAnimationFrame(this.animate);
+            }
+            initThree() {
+                this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x38bdf8);
+                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.container.appendChild(this.renderer.domElement);
+                const sunLight = new THREE.DirectionalLight(0xfffaed, 1.2);
+                sunLight.position.set(150, 200, 100); this.scene.add(sunLight);
+                this.scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+            }
+            initSystems() {
+                this.audio = new AudioEngine(); this.input = new InputHandler();
+                this.water = new WaterSystem(this.scene); this.track = new TrackSystem(this.scene);
+                this.player = new SurferEntity(this.scene, 0x0284c7, false);
+                this.ai = new SurferEntity(this.scene, 0xf59e0b, true);
+                this.resetPositions();
+            }
+            updateProfileUI() {
+                document.getElementById('profile-level').innerText = this.profile.level;
+                document.getElementById('profile-xp').innerText = this.profile.xp;
+                document.getElementById('profile-next-xp').innerText = this.profile.nextLevelXp;
+                document.getElementById('profile-rating').innerText = this.profile.rating;
+                document.getElementById('hud-level-val').innerText = this.profile.level;
+            }
+            resetPositions() {
+                const startPt = this.track.checkpoints[0];
+                this.player.equipPreset(selectedSurfType);
+                this.player.setPosition(startPt.x - 3, startPt.z - 10, 0);
+                this.ai.setPosition(startPt.x + 3, startPt.z - 10, 0);
+                this.player.currentCheckpoint = 1; this.ai.currentCheckpoint = 1;
+                this.player.finished = false; this.ai.finished = false; this.raceTime = 0;
+            }
+            setupEvents() {
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+                document.getElementById('btn-start-game').addEventListener('click', () => {
+                    this.audio.init();
+                    document.getElementById('modal-start').classList.add('hidden');
+                    document.getElementById('hud-top').classList.remove('hidden');
+                    document.getElementById('touch-controls').classList.remove('hidden');
+                    this.startCountdown();
+                });
+                document.getElementById('btn-restart').addEventListener('click', () => {
+                    document.getElementById('modal-result').classList.add('hidden');
+                    this.resetPositions(); this.startCountdown();
+                });
+            }
+            startCountdown() {
+                this.state = 'COUNTDOWN'; let count = 3;
+                const banner = document.getElementById('countdown-banner');
+                banner.classList.remove('hidden'); banner.innerText = '3';
+                const interval = setInterval(() => {
+                    count--;
+                    if (count > 0) { banner.innerText = count.toString(); this.audio.playCountdownBeep(false); }
+                    else if (count === 0) { banner.innerText = 'LOS!'; this.audio.playCountdownBeep(true); this.state = 'RACING'; }
+                    else { banner.classList.add('hidden'); clearInterval(interval); }
+                }, 1000);
+            }
+            onTrickLand(airTime) {
+                const xpEarned = Math.round(airTime * 60);
+                this.profile.addXp(xpEarned);
+                const tf = document.getElementById('trick-feedback');
+                tf.innerText = `HIGH AIR JUMP! +${xpEarned} XP`;
+                tf.classList.remove('opacity-0');
+                setTimeout(() => tf.classList.add('opacity-0'), 1000);
+            }
+            updateGameLogic(delta, time) {
+                if (this.state === 'RACING') {
+                    this.raceTime += delta;
+                    this.player.update(delta, this.input.controls, this.water, time, this.track.checkpoints, this.windVector, this);
+                    this.ai.update(delta, {}, this.water, time, this.track.checkpoints, this.windVector, this);
+                    this.checkCheckpoints(this.player); this.checkCheckpoints(this.ai);
+                    this.updateHUD();
+                }
+                const targetCamPos = new THREE.Vector3(this.player.position.x - Math.sin(this.player.rotation) * 14, this.player.position.y + 6, this.player.position.z - Math.cos(this.player.rotation) * 14);
+                this.camera.position.lerp(targetCamPos, delta * 5.0);
+                this.camera.lookAt(new THREE.Vector3(this.player.position.x, this.player.position.y + 2, this.player.position.z));
+            }
+            checkCheckpoints(entity) {
+                const target = this.track.checkpoints[entity.currentCheckpoint]; if (!target) return;
+                if (Math.hypot(entity.position.x - target.x, entity.position.z - target.z) < CONFIG.CHECKPOINT_RADIUS) {
+                    entity.currentCheckpoint++;
+                    if (!entity.isAI) this.audio.playCheckpointSound();
+                    if (entity.currentCheckpoint >= this.track.checkpoints.length) {
+                        entity.finished = true; entity.finishTime = this.raceTime;
+                        if (!entity.isAI && this.state !== 'FINISHED') this.finishRace();
+                    }
+                }
+            }
+            updateHUD() {
+                const p = SURF_PRESETS[selectedSurfType];
+                document.getElementById('hud-speed').innerText = `${Math.round((this.player.speed / p.maxSpeed) * 55)} km/h`;
+                const mins = Math.floor(this.raceTime / 60); const secs = (this.raceTime % 60).toFixed(1);
+                document.getElementById('hud-timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
+                document.getElementById('hud-progress').innerText = `${Math.round((this.player.currentCheckpoint / this.track.checkpoints.length) * 100)}%`;
+            }
+            finishRace() {
+                this.state = 'FINISHED';
+                const playerWon = this.player.finishTime <= (this.ai.finishTime || Infinity);
+                this.profile.addXp(playerWon ? 120 : 50);
+                this.updateProfileUI();
+                document.getElementById('modal-result').classList.remove('hidden');
+            }
+            animate() {
+                requestAnimationFrame(this.animate);
+                const delta = Math.min(this.clock.getDelta(), 0.1); const time = this.clock.getElapsedTime();
+                this.water.update(time); this.track.updateBuoys(time);
+                this.updateGameLogic(delta, time);
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        window.onload = () => { new Game(); };
+    </script>
+</body>
+</html>
