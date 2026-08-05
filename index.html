@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0284c7">
-    <title>Ocean Surf Racing - Championship Edition</title>
+    <title>Ocean Surf Racing - Refined Physics Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -23,7 +23,6 @@
         .interactive { pointer-events: auto; }
         #touch-zone { position: absolute; bottom: 0; left: 0; width: 100%; height: 55%; z-index: 5; touch-action: none; }
         
-        /* Neutrale Fingerposition / Steuerkreuz Visualisierung */
         #joystick-base {
             position: absolute; width: 120px; height: 120px; margin-left: -60px; margin-top: -60px;
             border: 3px solid rgba(56, 189, 248, 0.9); background: rgba(15, 23, 42, 0.6);
@@ -269,7 +268,6 @@
                     this.activeTouchId = touch.identifier !== undefined ? touch.identifier : 'mouse';
                     this.startPos = { x: touch.clientX, y: touch.clientY };
 
-                    // Zeige Fadenkreuz & Joystick an
                     this.joystickBase.style.left = `${this.startPos.x}px`; this.joystickBase.style.top = `${this.startPos.y}px`; this.joystickBase.style.display = 'block';
                     this.joystickStick.style.left = `${this.startPos.x}px`; this.joystickStick.style.top = `${this.startPos.y}px`; this.joystickStick.style.display = 'block';
 
@@ -285,14 +283,13 @@
 
                     const deltaX = touch.clientX - this.startPos.x;
                     const deltaY = touch.clientY - this.startPos.y;
-                    const maxDist = 130; // Größerer Radius für feinfühligere Lenkung
+                    const maxDist = 130;
                     const clampedX = Math.max(-maxDist, Math.min(maxDist, deltaX));
                     const clampedY = Math.max(-maxDist, Math.min(maxDist, deltaY));
 
                     this.joystickStick.style.left = `${this.startPos.x + clampedX}px`;
                     this.joystickStick.style.top = `${this.startPos.y + clampedY}px`;
 
-                    // Entschärfte analoge Lenkintensität
                     this.controls.steerAmount = (clampedX / maxDist) * 0.75;
                     if (deltaY < -25) { this.controls.gas = true; this.controls.brake = false; }
                     else if (deltaY > 25) { this.controls.gas = false; this.controls.brake = true; }
@@ -335,23 +332,16 @@
             }
         }
 
-        // --- 3D LANDKULISSE (STRAND & BERGE) ---
         class LandscapeBuilder {
             static buildLand(scene) {
                 const landGroup = new THREE.Group();
-                // Sandstrand an der Seite
-                const beachGeo = new THREE.PlaneGeometry(350, 1200);
-                beachGeo.rotateX(-Math.PI / 2);
-                const beachMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.9 });
-                const beach = new THREE.Mesh(beachGeo, beachMat);
-                beach.position.set(-350, 0.5, 0);
-                landGroup.add(beach);
+                const beachGeo = new THREE.PlaneGeometry(350, 1200); beachGeo.rotateX(-Math.PI / 2);
+                const beach = new THREE.Mesh(beachGeo, new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.9 }));
+                beach.position.set(-350, 0.5, 0); landGroup.add(beach);
 
-                // Berge im Hintergrund
                 for(let i = -500; i <= 500; i += 180) {
                     const mountainGeo = new THREE.ConeGeometry(90 + Math.random() * 40, 140 + Math.random() * 80, 5);
-                    const mountainMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
-                    const mountain = new THREE.Mesh(mountainGeo, mountainMat);
+                    const mountain = new THREE.Mesh(mountainGeo, new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 }));
                     mountain.position.set(-480 - Math.random() * 80, 50, i);
                     landGroup.add(mountain);
                 }
@@ -359,11 +349,9 @@
             }
         }
 
-        // --- SURFEQUIPMENT GENERATOR ---
         class SurfEquipmentBuilder {
             static buildEquipment(typeKey, skinHex, isAI = false) {
                 const group = new THREE.Group();
-                // Surfbrett
                 const shape = new THREE.Shape();
                 shape.moveTo(0, 2.2); shape.bezierCurveTo(0.7, 1.5, 0.8, -0.8, 0.5, -2.0);
                 shape.lineTo(-0.5, -2.0); shape.bezierCurveTo(-0.8, -0.8, -0.7, 1.5, 0, 2.2);
@@ -372,12 +360,10 @@
                 const boardMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: isAI ? 0xd97706 : skinHex, roughness: 0.2 }));
                 group.add(boardMesh);
 
-                // Surfer Figur
                 const body = new THREE.Group(); body.position.y = 1.0;
                 body.add(new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.25, 1.2, 8), new THREE.MeshStandardMaterial({ color: isAI ? 0x475569 : 0x0369a1 })));
                 group.add(body);
 
-                // Windsegel / Kite
                 if (typeKey === 'windsurf') {
                     const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 4.8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
                     mast.position.set(0, 2.3, 0.3); mast.rotation.x = -0.15; group.add(mast);
@@ -398,7 +384,9 @@
             constructor(scene, color, isAI = false, aiIndex = 0) {
                 this.scene = scene; this.isAI = isAI; this.aiIndex = aiIndex;
                 this.position = new THREE.Vector3(0, 0, 0);
-                this.verticalVelocity = 0; this.rotation = 0; this.speed = 0; this.radius = 2.2;
+                this.verticalVelocity = 0; this.rotation = 0; this.speed = 0; 
+                // Stark verkleinerter Kollisionsradius (0.8m statt 2.2m)
+                this.radius = 0.8;
                 this.isGrounded = true; this.currentCheckpoint = 0; this.finished = false; this.finishTime = 0;
                 this.group = new THREE.Group();
                 this.equipPreset(selectedSurfType, selectedSkin);
@@ -431,7 +419,7 @@
                 } else {
                     const targetWay = waypoints[this.currentCheckpoint];
                     if (targetWay) {
-                        const offset = (this.aiIndex - 1.5) * 6; // KI Strecken-Verteilung
+                        const offset = (this.aiIndex - 1.5) * 6;
                         const dx = (targetWay.x + offset) - this.position.x;
                         const dz = targetWay.z - this.position.z;
                         let diff = Math.atan2(dx, dz) - this.rotation;
@@ -459,7 +447,7 @@
         class TrackSystem {
             constructor(scene) { this.scene = scene; this.checkpoints = []; this.buoyMeshes = []; this.coins = []; }
             loadTrack(trackKey) {
-                this.buoyMeshes.forEach(b => this.scene.remove(b));
+                this.buoyMeshes.forEach(b => this.scene.remove(b.group));
                 this.coins.forEach(c => this.scene.remove(c.mesh));
                 this.buoyMeshes = []; this.coins = [];
 
@@ -519,7 +507,6 @@
                 this.track = new TrackSystem(this.scene);
                 this.player = new SurferEntity(this.scene, 0x0284c7, false);
                 
-                // 4 KI-Gegner erzeugen
                 this.aiOpponents = [];
                 for(let i = 0; i < 4; i++) {
                     this.aiOpponents.push(new SurferEntity(this.scene, 0xd97706, true, i));
@@ -547,12 +534,16 @@
                 this.track.loadTrack(selectedTrack);
                 const startPt = this.track.checkpoints[0];
                 this.player.equipPreset(selectedSurfType, selectedSkin);
-                this.player.setPosition(startPt.x, startPt.z - 15, 0);
+                
+                // Großer Startabstand: Spieler steht vorne in der Mitte
+                this.player.setPosition(startPt.x, startPt.z - 10, 0);
 
+                // KI-Gegner stehen in versetzten Reihen mit viel Abstand dahinter
                 this.aiOpponents.forEach((ai, idx) => {
                     ai.equipPreset('longboard');
-                    const offsetX = (idx - 1.5) * 7;
-                    ai.setPosition(startPt.x + offsetX, startPt.z - (10 + idx * 4), 0);
+                    const offsetX = (idx % 2 === 0 ? -12 : 12) * (idx < 2 ? 1 : 1.5);
+                    const offsetZ = -25 - (Math.floor(idx / 2) * 18);
+                    ai.setPosition(startPt.x + offsetX, startPt.z + offsetZ, 0);
                     ai.currentCheckpoint = 1; ai.finished = false;
                 });
 
@@ -608,23 +599,23 @@
                 }, 1000);
             }
             handleCollisions() {
-                // Kollisionsphysik zwischen allen Surfern & Bojen
+                // Sehr dezente Kollisions-Entkopplung bei echtem Direktkontakt
                 for (let i = 0; i < this.allRacers.length; i++) {
                     for (let j = i + 1; j < this.allRacers.length; j++) {
                         const r1 = this.allRacers[i]; const r2 = this.allRacers[j];
                         const dist = Math.hypot(r1.position.x - r2.position.x, r1.position.z - r2.position.z);
                         if (dist < (r1.radius + r2.radius)) {
-                            // Tempo-Reduzierung & Richtungs-Prall
-                            r1.speed *= 0.6; r2.speed *= 0.6;
-                            r1.rotation += 0.2; r2.rotation -= 0.2;
+                            // Sanfte Tempo-Drosselung und leichtes Weggleiten
+                            r1.speed *= 0.88; r2.speed *= 0.88;
+                            r1.rotation += 0.05; r2.rotation -= 0.05;
                         }
                     }
-                    // Bojen-Kollision
+                    // Bojen-Kollision (Punkt-Kontakt)
                     const r = this.allRacers[i];
                     this.track.buoyMeshes.forEach(b => {
                         const distToBuoy = Math.hypot(r.position.x - b.pos.x, r.position.z - b.pos.z);
-                        if (distToBuoy < 2.5) {
-                            r.speed *= 0.5; r.rotation += 0.3;
+                        if (distToBuoy < 1.2) {
+                            r.speed *= 0.80; r.rotation += 0.08;
                         }
                     });
                 }
@@ -679,7 +670,6 @@
                 const mins = Math.floor(this.raceTime / 60); const secs = (this.raceTime % 60).toFixed(1);
                 document.getElementById('hud-timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
                 
-                // Live Platzierung berechnen
                 let rank = 1;
                 this.aiOpponents.forEach(ai => {
                     if (ai.currentCheckpoint > this.player.currentCheckpoint) rank++;
@@ -695,7 +685,6 @@
                 const mins = Math.floor(totalSecs / 60); const secs = (totalSecs % 60).toFixed(1);
                 document.getElementById('result-time').innerText = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
                 
-                // Berechne Platzierung & Bonuspunkte
                 let finishedAhead = 0;
                 this.aiOpponents.forEach(ai => { if (ai.finishTime && ai.finishTime < totalSecs) finishedAhead++; });
                 const finalRank = finishedAhead + 1;
@@ -706,7 +695,6 @@
                 document.getElementById('result-title').innerText = `${finalRank}. PLATZ`;
                 document.getElementById('result-subtitle').innerText = finalRank === 1 ? 'Glückwunsch! Du hast alle 4 Gegner geschlagen!' : 'Gutes Rennen! Reicht es fürs nächste Mal für Platz 1?';
 
-                // Highscore / Bestzeit speichern
                 if (!this.profile.bestTime || totalSecs < this.profile.bestTime) this.profile.bestTime = totalSecs;
                 this.profile.addCoins(this.sessionCoins + rankBonusCoins);
                 document.getElementById('modal-result').classList.remove('hidden');
