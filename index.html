@@ -64,7 +64,7 @@
     <div id="ui-layer">
         
         <!-- Header / Status Leiste (HUD) -->
-        <div id="hud-top" class="flex justify-between items-start w-full max-w-4xl mx-auto hidden pointer-events-none">
+        <div id="hud-top" class="flex justify-between items-center w-full max-w-4xl mx-auto hidden pointer-events-none">
             <div class="bg-slate-900/85 backdrop-blur-md border border-cyan-500/30 rounded-xl p-2 px-3 sm:px-4 shadow-lg flex items-center space-x-2 sm:space-x-4">
                 <div class="text-center">
                     <div class="text-[10px] sm:text-xs text-cyan-300 font-semibold uppercase">Pos</div>
@@ -77,16 +77,23 @@
                 </div>
             </div>
 
-            <div class="bg-slate-900/85 backdrop-blur-md border border-cyan-500/30 rounded-xl p-2 px-3 sm:px-4 shadow-lg flex items-center space-x-2 sm:space-x-4">
-                <div class="text-center">
-                    <div class="text-[10px] sm:text-xs text-cyan-300 font-semibold uppercase">Zeit</div>
-                    <div id="hud-timer" class="text-sm sm:text-base font-mono font-bold text-cyan-200">00:00.0</div>
+            <div class="flex items-center space-x-2">
+                <div class="bg-slate-900/85 backdrop-blur-md border border-cyan-500/30 rounded-xl p-2 px-3 sm:px-4 shadow-lg flex items-center space-x-2 sm:space-x-4">
+                    <div class="text-center">
+                        <div class="text-[10px] sm:text-xs text-cyan-300 font-semibold uppercase">Zeit</div>
+                        <div id="hud-timer" class="text-sm sm:text-base font-mono font-bold text-cyan-200">00:00.0</div>
+                    </div>
+                    <div class="h-6 w-px bg-slate-700"></div>
+                    <div class="text-center">
+                        <div class="text-[10px] sm:text-xs text-cyan-300 font-semibold uppercase">Tempo</div>
+                        <div id="hud-speed" class="text-sm sm:text-base font-bold text-emerald-400">0 km/h</div>
+                    </div>
                 </div>
-                <div class="h-6 w-px bg-slate-700"></div>
-                <div class="text-center">
-                    <div class="text-[10px] sm:text-xs text-cyan-300 font-semibold uppercase">Tempo</div>
-                    <div id="hud-speed" class="text-sm sm:text-base font-bold text-emerald-400">0 km/h</div>
-                </div>
+
+                <!-- Hauptmenü Button während des Rennens -->
+                <button id="btn-in-game-menu" class="interactive bg-slate-900/85 border border-cyan-500/30 rounded-xl p-2 px-3 text-white text-lg font-bold shadow-lg active:scale-95">
+                    ⚙️
+                </button>
             </div>
         </div>
 
@@ -95,15 +102,12 @@
             <div id="countdown-banner" class="text-6xl sm:text-8xl font-black italic tracking-wider text-amber-400 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] hidden">
                 3
             </div>
-            <div id="trick-feedback" class="text-xl sm:text-3xl font-black text-amber-300 italic opacity-0 transition-opacity duration-300 drop-shadow-md">
-                HIGH AIR JUMP! +50 XP
-            </div>
             <div id="checkpoint-feedback" class="text-lg sm:text-2xl font-extrabold text-cyan-300 italic opacity-0 transition-opacity duration-300 drop-shadow-md">
                 BOJE PASSIERT!
             </div>
         </div>
 
-        <!-- Touch-Steuerung (Funktioniert im Hoch- UND Querformat) -->
+        <!-- Touch-Steuerung -->
         <div id="touch-controls" class="interactive flex justify-between items-end w-full max-w-4xl mx-auto pb-2 hidden">
             <!-- Links/Rechts Tasten -->
             <div class="flex space-x-2 sm:space-x-3">
@@ -185,16 +189,21 @@
                 <h2 id="result-title" class="text-2xl sm:text-3xl font-black text-amber-400 uppercase mb-1">SIEG!</h2>
                 <p id="result-subtitle" class="text-slate-300 text-xs sm:text-sm mb-3">Du hast das Surf-Rennen gewonnen!</p>
 
-                <div class="bg-slate-800/80 rounded-xl p-3 text-center space-y-2 mb-3 border border-slate-700">
+                <div class="bg-slate-800/80 rounded-xl p-3 text-center space-y-2 mb-4 border border-slate-700">
                     <div>
                         <span class="text-[10px] text-slate-400 block uppercase">Gesamtzeit</span>
-                        <span id="result-time" class="text-xl font-mono font-bold text-cyan-300">00:00.0</span>
+                        <span id="result-time" class="text-2xl font-mono font-bold text-cyan-300">00:00.0</span>
                     </div>
                 </div>
 
-                <button id="btn-restart" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-lg rounded-xl shadow-lg active:scale-95">
-                    NÄCHSTES RENNEN
-                </button>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <button id="btn-to-main-menu" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/40 font-bold text-base rounded-xl active:scale-95">
+                        HAUPTMENÜ
+                    </button>
+                    <button id="btn-restart" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-base rounded-xl shadow-lg active:scale-95">
+                        NÄCHSTES RENNEN
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -340,13 +349,11 @@
                 const p = this.preset;
 
                 if (!this.isAI) {
-                    // Automatische Grundgeschwindigkeit + Gas-Boost
                     if (inputControls.gas) {
                         this.speed += p.accel * delta;
                     } else if (inputControls.brake) {
                         this.speed -= p.accel * 1.5 * delta;
                     } else {
-                        // Sanftes Ausrollen auf Grundgeschwindigkeit
                         const baseCruiseSpeed = 10;
                         if (this.speed < baseCruiseSpeed) this.speed += p.accel * 0.5 * delta;
                         else this.speed -= p.friction * delta;
@@ -460,6 +467,19 @@
                     document.getElementById('modal-result').classList.add('hidden');
                     this.resetPositions(); this.startCountdown();
                 });
+                
+                // Menü-Buttons
+                const goToMenu = () => {
+                    this.state = 'MENU';
+                    document.getElementById('modal-result').classList.add('hidden');
+                    document.getElementById('hud-top').classList.add('hidden');
+                    document.getElementById('touch-controls').classList.add('hidden');
+                    document.getElementById('modal-start').classList.remove('hidden');
+                    this.resetPositions();
+                };
+
+                document.getElementById('btn-to-main-menu').addEventListener('click', goToMenu);
+                document.getElementById('btn-in-game-menu').addEventListener('click', goToMenu);
             }
             startCountdown() {
                 this.state = 'COUNTDOWN'; let count = 3;
@@ -503,6 +523,19 @@
             }
             finishRace() {
                 this.state = 'FINISHED';
+                
+                // Exakte Rennzeit im Ergebnis-Modal anzeigen
+                const totalSecs = this.player.finishTime || this.raceTime;
+                const mins = Math.floor(totalSecs / 60);
+                const secs = (totalSecs % 60).toFixed(1);
+                const timeStr = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
+                document.getElementById('result-time').innerText = timeStr;
+
+                const playerWon = this.player.finishTime <= (this.ai.finishTime || Infinity);
+                document.getElementById('result-title').innerText = playerWon ? 'SIEG!' : '2. PLATZ';
+                document.getElementById('result-subtitle').innerText = playerWon ? 'Du hast das Surf-Rennen gewonnen!' : 'Knapp verloren! Versuche es gleich noch einmal.';
+
+                this.profile.addXp(playerWon ? 120 : 50);
                 document.getElementById('modal-result').classList.remove('hidden');
             }
             animate() {
