@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Ocean Surf Racing - Phase 3</title>
+    <meta name="theme-color" content="#0284c7">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Ocean Surf Racing - Phase 4 Final Polish</title>
     <!-- Three.js 3D Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Tailwind CSS -->
@@ -53,17 +56,22 @@
             transform: scale(0.90);
             filter: brightness(1.3);
         }
+        @keyframes pulseWarn {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        .animate-warn {
+            animation: pulseWarn 0.6s infinite ease-in-out;
+        }
     </style>
 </head>
 <body>
 
-    <!-- 3D Render Canvas Container -->
     <div id="canvas-container"></div>
 
-    <!-- UI Layer Overhead -->
     <div id="ui-layer">
         
-        <!-- Header / Status Leiste (HUD) -->
+        <!-- Header HUD -->
         <div id="hud-top" class="flex justify-between items-center w-full max-w-4xl mx-auto hidden pointer-events-none">
             <div class="bg-slate-900/85 backdrop-blur-md border border-cyan-500/30 rounded-xl p-2 px-3 sm:px-4 shadow-lg flex items-center space-x-2 sm:space-x-4">
                 <div class="text-center">
@@ -101,17 +109,21 @@
             </div>
         </div>
 
-        <!-- Mitte: Countdown & Feedback -->
+        <!-- Mitte: Countdown, Warnings & Feedback -->
         <div id="hud-center" class="flex flex-col items-center justify-center my-auto pointer-events-none">
             <div id="countdown-banner" class="text-6xl sm:text-8xl font-black italic tracking-wider text-amber-400 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] hidden">
                 3
+            </div>
+            <!-- Falschfahrer Warnanzeige -->
+            <div id="wrong-way-banner" class="hidden bg-rose-600/90 text-white font-black italic text-2xl sm:text-4xl px-6 py-2 rounded-2xl border-2 border-rose-300 shadow-2xl animate-warn">
+                ⚠️ WRONG WAY! ⚠️
             </div>
             <div id="checkpoint-feedback" class="text-lg sm:text-2xl font-extrabold text-cyan-300 italic opacity-0 transition-opacity duration-300 drop-shadow-md">
                 BOJE PASSIERT!
             </div>
         </div>
 
-        <!-- Touch-Steuerung -->
+        <!-- Touch Controls -->
         <div id="touch-controls" class="interactive flex justify-between items-end w-full max-w-4xl mx-auto pb-2 hidden">
             <div class="flex space-x-2 sm:space-x-3">
                 <button id="btn-left" class="touch-btn w-14 h-14 sm:w-18 sm:h-18 bg-slate-900/80 border-2 border-cyan-400/60 rounded-full flex items-center justify-center text-2xl sm:text-3xl text-white shadow-xl backdrop-blur-md">
@@ -134,58 +146,66 @@
             </div>
         </div>
 
-        <!-- Hauptmenü Modal -->
+        <!-- Hauptmenü & Profilverwaltung -->
         <div id="modal-start" class="interactive absolute inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
             <div class="bg-slate-900 border border-cyan-500/40 rounded-3xl p-5 sm:p-7 max-w-lg w-full text-center shadow-2xl relative overflow-y-auto max-h-[95vh]">
                 <h1 class="text-3xl sm:text-5xl font-black italic tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-amber-300 mb-1">
                     OCEAN SURF
                 </h1>
-                <p class="text-cyan-200 text-xs sm:text-sm font-medium tracking-widest uppercase mb-4">Phase 3: Extended Content</p>
+                <p class="text-cyan-200 text-xs sm:text-sm font-medium tracking-widest uppercase mb-4">Phase 4: Pro Championship</p>
 
-                <div class="bg-slate-800/80 rounded-2xl p-3 mb-4 flex justify-between items-center border border-slate-700 text-xs sm:text-sm">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-600 rounded-full flex items-center justify-center font-black text-base sm:text-lg">🏄</div>
-                        <div class="text-left">
-                            <div class="font-bold text-white">Surfer Profil</div>
-                            <div class="text-cyan-400 text-xs">Gesammelte Münzen: <span id="profile-total-coins" class="font-bold text-amber-300">0</span></div>
-                        </div>
+                <!-- Spieler Profil & Namenseingabe -->
+                <div class="bg-slate-800/90 rounded-2xl p-3 mb-4 border border-slate-700 space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400 uppercase font-bold">Surfer Name:</span>
+                        <input id="player-name-input" type="text" value="Surfer 1" class="bg-slate-900 border border-cyan-500/50 rounded-lg px-2 py-1 text-cyan-300 font-bold text-right text-xs focus:outline-none focus:border-cyan-400" />
                     </div>
-                    <div class="text-right">
-                        <div class="font-bold text-yellow-400">Level <span id="profile-level">1</span></div>
-                        <div class="text-xs text-slate-400"><span id="profile-xp">0</span> / <span id="profile-next-xp">100</span> XP</div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-300">Skill Rating (MMR): <b id="profile-rating" class="text-amber-300">1000</b></span>
+                        <span class="text-yellow-400 font-bold">Level <span id="profile-level">1</span></span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-t border-slate-700/60 pt-2">
+                        <span class="text-slate-400">Guthaben: <b id="profile-total-coins" class="text-amber-300">🪙 0</b></span>
+                        <span class="text-slate-400">XP: <span id="profile-xp">0</span> / <span id="profile-next-xp">100</span></span>
                     </div>
                 </div>
 
+                <!-- Customization / Shop -->
+                <h3 class="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wider mb-2 text-left">Board Design (Shop):</h3>
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <button onclick="selectSkin('blue', 0)" id="skin-blue" class="skin-btn bg-slate-800 border-2 border-cyan-400 rounded-xl p-2 text-xs font-bold text-cyan-200">
+                        🌊 Classic Blau
+                    </button>
+                    <button onclick="selectSkin('red', 100)" id="skin-red" class="skin-btn bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-xs font-bold text-rose-400">
+                        🔥 Red Flame (100 🪙)
+                    </button>
+                    <button onclick="selectSkin('gold', 250)" id="skin-gold" class="skin-btn bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-xs font-bold text-yellow-400">
+                        👑 Pro Gold (250 🪙)
+                    </button>
+                </div>
+
                 <!-- Streckenauswahl -->
-                <h3 class="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wider mb-2 text-left">Wähle die Strecke:</h3>
+                <h3 class="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wider mb-2 text-left">Rennstrecke:</h3>
                 <div class="grid grid-cols-2 gap-2 mb-4">
                     <div id="track-lagoon" onclick="selectTrack('lagoon')" class="track-card bg-slate-800 border-2 border-cyan-400 rounded-xl p-2.5 text-left cursor-pointer">
                         <div class="font-bold text-cyan-200 text-xs">🏝️ Kristall-Lagune</div>
-                        <div class="text-[10px] text-slate-400">Sanfte Wellen, Weit</div>
                     </div>
                     <div id="track-volcano" onclick="selectTrack('volcano')" class="track-card bg-slate-800/60 border border-slate-700 rounded-xl p-2.5 text-left cursor-pointer">
                         <div class="font-bold text-cyan-200 text-xs">🌋 Vulkan-Passage</div>
-                        <div class="text-[10px] text-slate-400">Enger Kurs, Zick-Zack</div>
                     </div>
                 </div>
 
                 <!-- Surfgerät-Auswahl -->
-                <h3 class="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wider mb-2 text-left">Wähle dein Surfgerät:</h3>
+                <h3 class="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wider mb-2 text-left">Surfgerät:</h3>
                 <div class="grid grid-cols-3 gap-2 mb-4">
                     <div id="card-longboard" onclick="selectSurfType('longboard')" class="surf-card bg-slate-800 border-2 border-cyan-400 rounded-xl p-2 text-left cursor-pointer">
-                        <div class="text-xl mb-1">🏄‍♂️</div>
-                        <div class="font-bold text-cyan-200 text-xs">Longboard</div>
-                        <div class="text-[10px] text-slate-400">Stabil</div>
+                        <div class="font-bold text-cyan-200 text-xs">🏄‍♂️ Longboard</div>
                     </div>
                     <div id="card-windsurf" onclick="selectSurfType('windsurf')" class="surf-card bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-left cursor-pointer">
-                        <div class="text-xl mb-1">⛵</div>
-                        <div class="font-bold text-cyan-200 text-xs">Windsurfen</div>
-                        <div class="text-[10px] text-slate-400">Schnell</div>
+                        <div class="font-bold text-cyan-200 text-xs">⛵ Windsurfen</div>
                     </div>
                     <div id="card-kitesurf" onclick="selectSurfType('kitesurf')" class="surf-card bg-slate-800/60 border border-slate-700 rounded-xl p-2 text-left cursor-pointer">
-                        <div class="text-xl mb-1">🪁</div>
-                        <div class="font-bold text-cyan-200 text-xs">Kitesurfen</div>
-                        <div class="text-[10px] text-slate-400">Agil</div>
+                        <div class="font-bold text-cyan-200 text-xs">🪁 Kitesurfen</div>
                     </div>
                 </div>
 
@@ -228,7 +248,7 @@
 
     </div>
 
-    <!-- Hauptskript: Game Engine & Logik -->
+    <!-- Engine Script -->
     <script>
         const SURF_PRESETS = {
             longboard: { maxSpeed: 26, accel: 16, friction: 2.5, turnSpeed: 2.5, jumpForce: 8.0 },
@@ -238,49 +258,71 @@
 
         const TRACK_PRESETS = {
             lagoon: {
-                name: 'Kristall-Lagune',
                 points: [{ x: 0, z: 0 }, { x: 30, z: 90 }, { x: 100, z: 160 }, { x: 190, z: 190 }, { x: 270, z: 110 }, { x: 280, z: 10 }, { x: 210, z: -90 }, { x: 110, z: -150 }, { x: 0, z: -110 }, { x: 0, z: -20 }]
             },
             volcano: {
-                name: 'Vulkan-Passage',
                 points: [{ x: 0, z: 0 }, { x: -40, z: 80 }, { x: 20, z: 160 }, { x: 120, z: 140 }, { x: 60, z: 60 }, { x: 150, z: -20 }, { x: 80, z: -120 }, { x: -20, z: -140 }, { x: -60, z: -60 }, { x: 0, z: -20 }]
             }
+        };
+
+        const SKINS = {
+            blue: { hex: 0x0284c7, cost: 0 },
+            red: { hex: 0xef4444, cost: 100 },
+            gold: { hex: 0xeab308, cost: 250 }
         };
 
         const CONFIG = { WATER_SIZE: 1200, WATER_SEGMENTS: 90, WAVE_SPEED: 1.8, WAVE_HEIGHT: 0.9, CHECKPOINT_RADIUS: 10.0, GRAVITY: 24.0 };
         let selectedSurfType = 'longboard';
         let selectedTrack = 'lagoon';
+        let selectedSkin = 'blue';
 
         function selectSurfType(type) {
             selectedSurfType = type;
-            document.querySelectorAll('.surf-card').forEach(card => {
-                card.classList.remove('border-cyan-400', 'bg-slate-800');
-                card.classList.add('border-slate-700', 'bg-slate-800/60');
-            });
-            const activeCard = document.getElementById(`card-${type}`);
-            if (activeCard) {
-                activeCard.classList.remove('border-slate-700', 'bg-slate-800/60');
-                activeCard.classList.add('border-cyan-400', 'bg-slate-800');
-            }
+            document.querySelectorAll('.surf-card').forEach(card => card.classList.replace('border-cyan-400', 'border-slate-700'));
+            const active = document.getElementById(`card-${type}`);
+            if (active) active.classList.replace('border-slate-700', 'border-cyan-400');
         }
 
         function selectTrack(trackKey) {
             selectedTrack = trackKey;
-            document.querySelectorAll('.track-card').forEach(card => {
-                card.classList.remove('border-cyan-400', 'bg-slate-800');
-                card.classList.add('border-slate-700', 'bg-slate-800/60');
-            });
-            const activeCard = document.getElementById(`track-${trackKey}`);
-            if (activeCard) {
-                activeCard.classList.remove('border-slate-700', 'bg-slate-800/60');
-                activeCard.classList.add('border-cyan-400', 'bg-slate-800');
+            document.querySelectorAll('.track-card').forEach(card => card.classList.replace('border-cyan-400', 'border-slate-700'));
+            const active = document.getElementById(`track-${trackKey}`);
+            if (active) active.classList.replace('border-slate-700', 'border-cyan-400');
+        }
+
+        function selectSkin(skinKey, cost) {
+            if (window.gameInstance && window.gameInstance.profile) {
+                const p = window.gameInstance.profile;
+                if (!p.unlockedSkins.includes(skinKey)) {
+                    if (p.totalCoins >= cost) {
+                        p.totalCoins -= cost;
+                        p.unlockedSkins.push(skinKey);
+                        p.save();
+                        window.gameInstance.updateProfileUI();
+                    } else {
+                        alert("Nicht genügend Münzen!");
+                        return;
+                    }
+                }
+                selectedSkin = skinKey;
+                document.querySelectorAll('.skin-btn').forEach(btn => btn.classList.replace('border-cyan-400', 'border-slate-700'));
+                const active = document.getElementById(`skin-${skinKey}`);
+                if (active) active.classList.replace('border-slate-700', 'border-cyan-400');
             }
         }
 
+        // --- PERSISTENTES PROFIL-SYSTEM ---
         class PlayerProfile {
             constructor() { 
-                this.level = 1; this.xp = 0; this.nextLevelXp = 100; this.totalCoins = 0;
+                this.name = "Surfer 1";
+                this.level = 1; this.xp = 0; this.nextLevelXp = 100;
+                this.rating = 1000; this.totalCoins = 0;
+                this.unlockedSkins = ['blue'];
                 this.load();
+            }
+            setName(newName) {
+                this.name = newName || "Surfer 1";
+                this.save();
             }
             addXp(amount) {
                 this.xp += amount;
@@ -297,20 +339,25 @@
             }
             save() {
                 try {
-                    localStorage.setItem('ocean_surf_profile_p3', JSON.stringify({
-                        level: this.level, xp: this.xp, nextLevelXp: this.nextLevelXp, totalCoins: this.totalCoins
+                    localStorage.setItem(`ocean_surf_profile_${this.name}`, JSON.stringify({
+                        name: this.name, level: this.level, xp: this.xp, nextLevelXp: this.nextLevelXp,
+                        rating: this.rating, totalCoins: this.totalCoins, unlockedSkins: this.unlockedSkins
                     }));
+                    localStorage.setItem('ocean_surf_last_player', this.name);
                 } catch(e) {}
             }
-            load() {
+            load(playerName) {
                 try {
-                    const data = localStorage.getItem('ocean_surf_profile_p3');
+                    const targetName = playerName || localStorage.getItem('ocean_surf_last_player') || "Surfer 1";
+                    const data = localStorage.getItem(`ocean_surf_profile_${targetName}`);
                     if (data) {
-                        const parsed = JSON.parse(data);
-                        this.level = parsed.level || 1;
-                        this.xp = parsed.xp || 0;
-                        this.nextLevelXp = parsed.nextLevelXp || 100;
-                        this.totalCoins = parsed.totalCoins || 0;
+                        const p = JSON.parse(data);
+                        this.name = p.name || targetName; this.level = p.level || 1;
+                        this.xp = p.xp || 0; this.nextLevelXp = p.nextLevelXp || 100;
+                        this.rating = p.rating || 1000; this.totalCoins = p.totalCoins || 0;
+                        this.unlockedSkins = p.unlockedSkins || ['blue'];
+                    } else {
+                        this.name = targetName;
                     }
                 } catch(e) {}
             }
@@ -340,8 +387,7 @@
             }
             setupTouch() {
                 const bindButton = (id, key) => {
-                    const btn = document.getElementById(id);
-                    if (!btn) return;
+                    const btn = document.getElementById(id); if (!btn) return;
                     const start = (e) => { e.preventDefault(); this.controls[key] = true; btn.classList.add('active'); };
                     const end = (e) => { e.preventDefault(); this.controls[key] = false; btn.classList.remove('active'); };
                     btn.addEventListener('pointerdown', start);
@@ -376,47 +422,6 @@
             }
         }
 
-        // --- PARTIKEL SYSTEM (WASSER-GISCHT) ---
-        class SprayParticleSystem {
-            constructor(scene) {
-                this.particleCount = 60;
-                this.geometry = new THREE.BufferGeometry();
-                this.positions = new Float32Array(this.particleCount * 3);
-                this.alphas = new Float32Array(this.particleCount);
-
-                for (let i = 0; i < this.particleCount; i++) {
-                    this.positions[i * 3] = 0;
-                    this.positions[i * 3 + 1] = -10;
-                    this.positions[i * 3 + 2] = 0;
-                    this.alphas[i] = 0;
-                }
-
-                this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
-                
-                const material = new THREE.PointsMaterial({
-                    color: 0xffffff,
-                    size: 0.8,
-                    transparent: true,
-                    opacity: 0.6
-                });
-
-                this.particles = new THREE.Points(this.geometry, material);
-                scene.add(this.particles);
-                this.currentIndex = 0;
-            }
-
-            emit(pos, speed) {
-                if (speed < 5) return;
-                const idx = this.currentIndex;
-                this.positions[idx * 3] = pos.x + (Math.random() - 0.5) * 1.2;
-                this.positions[idx * 3 + 1] = pos.y + 0.2;
-                this.positions[idx * 3 + 2] = pos.z + (Math.random() - 0.5) * 1.2;
-
-                this.currentIndex = (this.currentIndex + 1) % this.particleCount;
-                this.geometry.attributes.position.needsUpdate = true;
-            }
-        }
-
         class SurferEntity {
             constructor(scene, color, isAI = false) {
                 this.scene = scene; this.isAI = isAI;
@@ -425,16 +430,18 @@
                 this.isGrounded = true;
                 this.currentCheckpoint = 0; this.finished = false; this.finishTime = 0;
                 this.group = new THREE.Group(); this.color = color;
-                this.spray = new SprayParticleSystem(scene);
-                this.equipPreset(selectedSurfType);
+                this.equipPreset(selectedSurfType, selectedSkin);
                 scene.add(this.group);
             }
-            equipPreset(typeKey) {
+            equipPreset(typeKey, skinKey = 'blue') {
                 this.preset = SURF_PRESETS[typeKey] || SURF_PRESETS.longboard;
                 while(this.group.children.length > 0){ this.group.remove(this.group.children[0]); }
-                const boardMat = new THREE.MeshStandardMaterial({ color: this.color, roughness: 0.3 });
+                
+                const skinHex = this.isAI ? 0xd97706 : (SKINS[skinKey] ? SKINS[skinKey].hex : 0x0284c7);
+                const boardMat = new THREE.MeshStandardMaterial({ color: skinHex, roughness: 0.3 });
                 this.boardMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.2, 3.8), boardMat);
                 this.group.add(this.boardMesh);
+                
                 const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.25, 1.1, 8), new THREE.MeshStandardMaterial({ color: this.isAI ? 0xd97706 : 0x0284c7 }));
                 torso.position.y = 1.0;
                 this.group.add(torso);
@@ -488,8 +495,6 @@
                     }
                 } else {
                     this.position.y = waveY + 0.1;
-                    // Gischt-Partikel erzeugen beim Fahren
-                    this.spray.emit(this.position, this.speed);
                 }
 
                 this.group.position.copy(this.position);
@@ -499,24 +504,16 @@
 
         class TrackSystem {
             constructor(scene) {
-                this.scene = scene;
-                this.checkpoints = [];
-                this.buoyMeshes = [];
-                this.coins = [];
-                this.coinMeshes = [];
+                this.scene = scene; this.checkpoints = []; this.buoyMeshes = []; this.coins = []; this.coinMeshes = [];
             }
             loadTrack(trackKey) {
-                // Alte Meshes aufräumen
                 this.buoyMeshes.forEach(b => this.scene.remove(b));
                 this.coinMeshes.forEach(c => this.scene.remove(c));
-                this.buoyMeshes = [];
-                this.coinMeshes = [];
-                this.coins = [];
+                this.buoyMeshes = []; this.coinMeshes = []; this.coins = [];
 
                 const trackData = TRACK_PRESETS[trackKey] || TRACK_PRESETS.lagoon;
                 this.checkpoints = trackData.points;
 
-                // Bojen erzeugen
                 this.checkpoints.forEach((pt, index) => {
                     const buoyGroup = new THREE.Group();
                     const buoy = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.2, 2.5, 8), new THREE.MeshStandardMaterial({ color: index === this.checkpoints.length - 1 ? 0xef4444 : 0x10b981 }));
@@ -525,18 +522,12 @@
                     this.scene.add(buoyGroup);
                     this.buoyMeshes.push(buoyGroup);
 
-                    // Münzen zwischen den Bojen platzieren
                     if (index < this.checkpoints.length - 1) {
                         const nextPt = this.checkpoints[index + 1];
                         const coinX = (pt.x + nextPt.x) / 2;
                         const coinZ = (pt.z + nextPt.z) / 2;
-                        
-                        const coinGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.2, 12);
-                        const coinMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8, roughness: 0.2 });
-                        const coin = new THREE.Mesh(coinGeo, coinMat);
-                        coin.rotation.x = Math.PI / 2;
-                        coin.position.set(coinX, 1.5, coinZ);
-                        
+                        const coin = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.2, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8 }));
+                        coin.rotation.x = Math.PI / 2; coin.position.set(coinX, 1.5, coinZ);
                         this.scene.add(coin);
                         this.coinMeshes.push(coin);
                         this.coins.push({ x: coinX, z: coinZ, collected: false, mesh: coin });
@@ -551,6 +542,7 @@
 
         class Game {
             constructor() {
+                window.gameInstance = this;
                 this.container = document.getElementById('canvas-container');
                 this.state = 'MENU'; this.clock = new THREE.Clock(); this.raceTime = 0;
                 this.sessionCoins = 0;
@@ -579,22 +571,24 @@
                 this.resetPositions();
             }
             updateProfileUI() {
+                document.getElementById('player-name-input').value = this.profile.name;
                 document.getElementById('profile-level').innerText = this.profile.level;
                 document.getElementById('profile-xp').innerText = this.profile.xp;
                 document.getElementById('profile-next-xp').innerText = this.profile.nextLevelXp;
-                document.getElementById('profile-total-coins').innerText = this.profile.totalCoins;
+                document.getElementById('profile-rating').innerText = this.profile.rating;
+                document.getElementById('profile-total-coins').innerText = `🪙 ${this.profile.totalCoins}`;
             }
             resetPositions() {
                 this.track.loadTrack(selectedTrack);
                 const startPt = this.track.checkpoints[0];
-                this.player.equipPreset(selectedSurfType);
+                this.player.equipPreset(selectedSurfType, selectedSkin);
                 this.player.setPosition(startPt.x - 3, startPt.z - 10, 0);
                 this.ai.setPosition(startPt.x + 3, startPt.z - 10, 0);
                 this.player.currentCheckpoint = 1; this.ai.currentCheckpoint = 1;
                 this.player.finished = false; this.ai.finished = false;
-                this.raceTime = 0;
-                this.sessionCoins = 0;
+                this.raceTime = 0; this.sessionCoins = 0;
                 document.getElementById('hud-coins').innerText = `🪙 0`;
+                document.getElementById('wrong-way-banner').classList.add('hidden');
             }
             setupEvents() {
                 window.addEventListener('resize', () => {
@@ -602,7 +596,14 @@
                     this.camera.updateProjectionMatrix();
                     this.renderer.setSize(window.innerWidth, window.innerHeight);
                 });
+
+                document.getElementById('player-name-input').addEventListener('change', (e) => {
+                    this.profile.load(e.target.value.trim());
+                    this.updateProfileUI();
+                });
+
                 document.getElementById('btn-start-game').addEventListener('click', () => {
+                    this.profile.setName(document.getElementById('player-name-input').value.trim());
                     document.getElementById('modal-start').classList.add('hidden');
                     document.getElementById('hud-top').classList.remove('hidden');
                     document.getElementById('touch-controls').classList.remove('hidden');
@@ -645,11 +646,30 @@
                     this.ai.update(delta, {}, this.water, time, this.track.checkpoints);
                     this.checkCheckpoints(this.player); this.checkCheckpoints(this.ai);
                     this.checkCoins();
+                    this.checkWrongWay();
                     this.updateHUD();
                 }
                 const targetCamPos = new THREE.Vector3(this.player.position.x - Math.sin(this.player.rotation) * 14, this.player.position.y + 6, this.player.position.z - Math.cos(this.player.rotation) * 14);
                 this.camera.position.lerp(targetCamPos, delta * 5.0);
                 this.camera.lookAt(new THREE.Vector3(this.player.position.x, this.player.position.y + 2, this.player.position.z));
+            }
+            checkWrongWay() {
+                // Vektor-Abgleich zwischen Bewegungsrichtung und nächster Boje
+                const target = this.track.checkpoints[this.player.currentCheckpoint];
+                if (!target) return;
+                
+                const toTarget = new THREE.Vector2(target.x - this.player.position.x, target.z - this.player.position.z).normalize();
+                const facing = new THREE.Vector2(Math.sin(this.player.rotation), Math.cos(this.player.rotation));
+                
+                const dot = toTarget.dot(facing);
+                const wrongWayBanner = document.getElementById('wrong-way-banner');
+                
+                // Wenn man entgegen dem Bojen-Vektor surfst (Winkel > 90 Grad)
+                if (dot < -0.3 && this.player.speed > 5) {
+                    wrongWayBanner.classList.remove('hidden');
+                } else {
+                    wrongWayBanner.classList.add('hidden');
+                }
             }
             checkCoins() {
                 this.track.coins.forEach(c => {
@@ -680,10 +700,10 @@
             }
             finishRace() {
                 this.state = 'FINISHED';
+                document.getElementById('wrong-way-banner').classList.add('hidden');
                 
                 const totalSecs = this.player.finishTime || this.raceTime;
-                const mins = Math.floor(totalSecs / 60);
-                const secs = (totalSecs % 60).toFixed(1);
+                const mins = Math.floor(totalSecs / 60); const secs = (totalSecs % 60).toFixed(1);
                 document.getElementById('result-time').innerText = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
                 document.getElementById('result-coins').innerText = `+${this.sessionCoins}`;
 
@@ -691,7 +711,6 @@
                 document.getElementById('result-title').innerText = playerWon ? 'SIEG!' : '2. PLATZ';
                 document.getElementById('result-subtitle').innerText = playerWon ? 'Du hast das Surf-Rennen gewonnen!' : 'Knapp verloren! Versuche es gleich noch einmal.';
 
-                // Belohnungen speichern
                 this.profile.addCoins(this.sessionCoins);
                 this.profile.addXp((playerWon ? 120 : 50) + (this.sessionCoins * 10));
                 
